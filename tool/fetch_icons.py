@@ -139,7 +139,7 @@ def icon_from_apk(apk, aapt):
                     return data
         # Sinon : une image ic_launcher en PNG.
         cands = [n for n in names if re.search(r"mipmap-[a-z]*hdpi[^/]*/ic_launcher(_round)?\.(png|webp)$", n)]
-        cands.sort(key=lambda n: ("xxxhdpi" in n, "xxhdpi" in n, "xhdpi" in n), reverse=True)
+        cands.sort(key=lambda n: ("xxxhdpi" in n, "xxhdpi" in n, "xhdpi" in n, "_round" not in n, n), reverse=True)
         if cands:
             return to_png(z.read(cands[0]))
     return None
