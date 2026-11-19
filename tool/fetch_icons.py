@@ -70,6 +70,31 @@ def icon_from_apk(apk, aapt):
     return None
 
 
+def get_bytes(url):
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "WouStore"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = r.read()
+        return to_png(data) if data else None
+    except Exception:
+        return None
+
+
+def icon_from_store_pages(app):
+    repo = app["github"]
+    urls = [
+        f"https://f-droid.org/repo/{app['id']}/en-US/icon.png",
+    ]
+    for branch in ("master", "main", "dev"):
+        urls.append(f"https://raw.githubusercontent.com/{repo}/{branch}/fastlane/metadata/android/en-US/images/icon.png")
+    for url in urls:
+        data = get_bytes(url)
+        if data:
+            print(app["name"], ": logo trouvé sur", url)
+            return data
+    return None
+
+
 def main():
     catalog = json.load(open("catalog.json"))
     aapt = find_aapt()
@@ -91,7 +116,11 @@ def main():
             print(app["name"], ": erreur", e)
             continue
         if not data:
-            print(app["name"], ": aucune image PNG dans l'APK")
+            # Icône dessinée en vectoriel dans l'APK : on prend le logo publié
+            # par le créateur ailleurs (F-Droid, ou les fiches « fastlane » de son dépôt).
+            data = icon_from_store_pages(app)
+        if not data:
+            print(app["name"], ": aucun logo trouvé")
             continue
         if not dest.exists() or dest.read_bytes() != data:
             dest.write_bytes(data)
