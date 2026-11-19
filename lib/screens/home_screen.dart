@@ -16,6 +16,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _tab = 0;
+  final _query = TextEditingController();
+  final _searchFocus = FocusNode();
 
   @override
   void initState() {
@@ -27,6 +29,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _query.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -64,7 +68,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           color: W.accent,
                           backgroundColor: W.surface,
                           onRefresh: store.load,
-                          child: _tab == 0 ? _home(store) : _mine(store),
+                          child: _tab == 0
+                              ? _home(store)
+                              : _tab == 1
+                                  ? _search(store)
+                                  : _mine(store),
                         ),
                 ),
               ],
@@ -74,7 +82,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       bottomNavigationBar: _BottomBar(
         index: _tab,
-        onTap: (i) => setState(() => _tab = i),
+        onTap: (i) {
+          setState(() => _tab = i);
+          if (i == 1) {
+            _searchFocus.requestFocus();
+          } else {
+            _searchFocus.unfocus();
+          }
+        },
       ),
     );
   }
@@ -110,6 +125,86 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
       ],
     );
+  }
+
+  Widget _search(Store store) {
+    final q = _normalize(_query.text.trim());
+    final results = q.isEmpty
+        ? store.apps
+        : store.apps.where((a) {
+            final text = _normalize(
+                '${a.name} ${a.tagline} ${a.category} ${a.developer} ${a.description}');
+            return q.split(' ').every(text.contains);
+          }).toList();
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      children: [
+        TextField(
+          controller: _query,
+          focusNode: _searchFocus,
+          onChanged: (_) => setState(() {}),
+          textInputAction: TextInputAction.search,
+          style: W.body(16),
+          cursorColor: W.accent,
+          decoration: InputDecoration(
+            hintText: 'Rechercher une appli ou un jeu',
+            hintStyle: W.body(16, color: W.muted),
+            prefixIcon: const Icon(Icons.search_rounded, color: W.muted),
+            suffixIcon: _query.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Effacer',
+                    icon: const Icon(Icons.close_rounded, color: W.muted),
+                    onPressed: () => setState(_query.clear),
+                  ),
+            filled: true,
+            fillColor: W.surface,
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: W.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: W.accent, width: 1.5),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (q.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              results.isEmpty
+                  ? 'Aucune appli ne correspond à « ${_query.text.trim()} ».'
+                  : results.length == 1
+                      ? '1 résultat'
+                      : '${results.length} résultats',
+              style: W.body(13, color: W.muted),
+            ),
+          ),
+        for (var i = 0; i < results.length; i++)
+          _AppRow(
+            app: results[i],
+            last: i == results.length - 1,
+            onTap: () => _openApp(results[i]),
+          ),
+      ],
+    );
+  }
+
+  /// Minuscules et sans accents : « réseau » trouve « Reseau ».
+  static String _normalize(String s) {
+    const from = 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿœæ';
+    const to = 'aaaaaaceeeeiiiinooooouuuuyyoa';
+    final lower = s.toLowerCase();
+    final b = StringBuffer();
+    for (final ch in lower.split('')) {
+      final i = from.indexOf(ch);
+      b.write(i >= 0 ? to[i] : ch);
+    }
+    return b.toString();
   }
 
   Widget _mine(Store store) {
@@ -383,11 +478,12 @@ class _BottomBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             children: [
               item(0, Icons.home_outlined, 'Accueil'),
-              item(1, Icons.grid_view_rounded, 'Mes applis'),
+              item(1, Icons.search_rounded, 'Rechercher'),
+              item(2, Icons.grid_view_rounded, 'Mes applis'),
             ],
           ),
         ),
