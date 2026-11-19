@@ -41,6 +41,17 @@ def find_aapt():
     return tools[-1]
 
 
+def to_png(data):
+    """Les logos en WebP sont convertis en PNG."""
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return data
+    import io
+    from PIL import Image
+    out = io.BytesIO()
+    Image.open(io.BytesIO(data)).convert("RGBA").save(out, "PNG")
+    return out.getvalue()
+
+
 def icon_from_apk(apk, aapt):
     out = subprocess.run([aapt, "dump", "badging", apk], capture_output=True, text=True).stdout
     # application-icon-640:'res/xx.png'  → on garde les PNG, de la plus grande à la plus petite.
@@ -49,13 +60,13 @@ def icon_from_apk(apk, aapt):
     with zipfile.ZipFile(apk) as z:
         names = set(z.namelist())
         for _, path in icons:
-            if path.endswith(".png") and path in names:
-                return z.read(path)
+            if path.endswith((".png", ".webp")) and path in names:
+                return to_png(z.read(path))
         # Icône adaptative seulement : on cherche une image ic_launcher en PNG.
-        cands = [n for n in names if re.search(r"mipmap-[a-z]*hdpi[^/]*/ic_launcher\.png$", n)]
+        cands = [n for n in names if re.search(r"mipmap-[a-z]*hdpi[^/]*/ic_launcher(_round)?\.(png|webp)$", n)]
         cands.sort(key=lambda n: ("xxxhdpi" in n, "xxhdpi" in n, "xhdpi" in n), reverse=True)
         if cands:
-            return z.read(cands[0])
+            return to_png(z.read(cands[0]))
     return None
 
 

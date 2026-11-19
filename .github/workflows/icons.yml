@@ -21,7 +21,9 @@ jobs:
       - name: Récupérer le vrai logo de chaque appli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 tool/fetch_icons.py
+        run: |
+          pip install --quiet pillow
+          python3 tool/fetch_icons.py
 
       - name: Enregistrer les logos
         run: |
