@@ -43,7 +43,7 @@ class Store extends ChangeNotifier {
 
   /// Icônes réelles des applis installées (lues sur le téléphone).
   final Map<String, Uint8List> iconBytes = {};
-  bool _askedNotifications = false;
+  Completer<void>? _shizukuWait;
 
   final Map<String, AppState> _states = {};
   final Map<String, bool> _cancel = {};
@@ -59,9 +59,8 @@ class Store extends ChangeNotifier {
     _started = true;
     _ch.setMethodCallHandler(_onNative);
     await refreshShizuku();
-    if (shizuku == 'ask') {
-      await _ch.invokeMethod('shizukuRequest');
-    }
+    // Au lancement, seulement la demande de notifications du téléphone.
+    await _ch.invokeMethod('askNotifications');
     await load();
   }
 
@@ -83,6 +82,8 @@ class Store extends ChangeNotifier {
         break;
       case 'shizukuChanged':
         await refreshShizuku();
+        final w = _shizukuWait;
+        if (w != null && !w.isCompleted && shizuku != 'ask') w.complete();
         break;
     }
     return null;
@@ -112,8 +113,17 @@ class Store extends ChangeNotifier {
     loading = false;
     notifyListeners();
     await refreshInstalled();
-    await Future.wait(apps.map(_resolve));
+    await Future.wait([...apps.map(_resolve), ...apps.map(_loadMeta)]);
     notifyListeners();
+  }
+
+  Future<void> _loadMeta(AppEntry a) async {
+    try {
+      final j = jsonDecode(await _getText(
+          Uri.parse('${AppEntry.metaBase}/${a.id}.json'))) as Map<String, dynamic>;
+      a.permissions = ((j['permissions'] ?? const []) as List).cast<String>();
+      a.minSdk = (j['minSdk'] as num?)?.toInt();
+    } catch (_) {}
   }
 
   /// Cherche le fichier .apk de la dernière version publiée sur GitHub.
@@ -130,6 +140,8 @@ class Store extends ChangeNotifier {
           a.downloadUrl = asset['browser_download_url'] as String;
           a.size = (asset['size'] as num).toInt();
           a.latestVersion = j['tag_name'] as String?;
+          a.releaseNotes = (j['body'] as String?)?.trim();
+          a.updatedAt = DateTime.tryParse((j['published_at'] ?? '') as String);
           a.resolveError = null;
           return;
         }
@@ -190,6 +202,15 @@ class Store extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _askShizuku() async {
+    _shizukuWait = Completer<void>();
+    await _ch.invokeMethod('shizukuRequest');
+    // On attend la réponse (au plus une minute).
+    await _shizukuWait!.future.timeout(const Duration(minutes: 1), onTimeout: () {});
+    _shizukuWait = null;
+    await refreshShizuku();
+  }
+
   Future<void> shizukuAction() async {
     if (shizuku == 'ask') {
       await _ch.invokeMethod('shizukuRequest');
@@ -209,10 +230,9 @@ class Store extends ChangeNotifier {
   Future<void> install(AppEntry a) async {
     final s = stateOf(a.id);
     if (s.busy) return;
-    if (!_askedNotifications) {
-      // Demandée au premier téléchargement seulement, pas au lancement.
-      _askedNotifications = true;
-      await _ch.invokeMethod('askNotifications');
+    if (shizuku == 'ask') {
+      // Shizuku demande son autorisation au premier « Installer » seulement.
+      await _askShizuku();
     }
     s
       ..phase = Phase.downloading

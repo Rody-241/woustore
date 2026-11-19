@@ -22,6 +22,8 @@ class AppEntry {
 
   static const iconBase =
       'https://raw.githubusercontent.com/Rody-241/woustore/main/icons';
+  static const metaBase =
+      'https://raw.githubusercontent.com/Rody-241/woustore/main/meta';
 
   /// Nom du paquet Android, par exemple com.wifensor.wifensor.
   final String id;
@@ -52,6 +54,12 @@ class AppEntry {
   int? size;
   String? latestVersion;
   String? resolveError;
+  String? releaseNotes;
+  DateTime? updatedAt;
+
+  // Lu dans meta/<id>.json (extrait automatiquement de l'APK).
+  List<String>? permissions;
+  int? minSdk;
 
   factory AppEntry.fromJson(Map<String, dynamic> j) {
     return AppEntry(
@@ -76,6 +84,17 @@ class AppEntry {
   static Color _parseColor(String hex) {
     final v = int.tryParse(hex.replaceFirst('#', ''), radix: 16) ?? 0x3DDC97;
     return Color(0xFF000000 | v);
+  }
+
+  /// « Android 7.0 et plus », d'après l'APK, sinon d'après le catalogue.
+  String get androidLabel {
+    const names = {
+      21: '5.0', 22: '5.1', 23: '6.0', 24: '7.0', 25: '7.1', 26: '8.0', 27: '8.1',
+      28: '9', 29: '10', 30: '11', 31: '12', 32: '12L', 33: '13', 34: '14', 35: '15', 36: '16',
+    };
+    final n = minSdk == null ? null : names[minSdk];
+    if (n != null) return 'Android $n+';
+    return android.isEmpty ? '—' : 'Android $android';
   }
 
   String get categoryLine =>

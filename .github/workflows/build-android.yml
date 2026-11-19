@@ -7,6 +7,7 @@ on:
       - 'catalog.json'
       - 'README.md'
       - 'icons/**'
+      - 'meta/**'
       - 'tool/fetch_icons.py'
       - '.github/workflows/icons.yml'
   workflow_dispatch:

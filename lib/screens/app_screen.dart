@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/app_entry.dart';
+import '../permissions.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
@@ -86,6 +87,20 @@ class AppScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(app.description,
                   style: W.body(15, color: W.soft).copyWith(height: 1.55)),
+              if (app.releaseNotes != null && cleanNotes(app.releaseNotes!).isNotEmpty) ...[
+                const SizedBox(height: 28),
+                _Section(
+                  title: 'Nouveautés',
+                  trailing: app.updatedAt == null ? null : frenchDate(app.updatedAt!),
+                  child: _Expandable(text: cleanNotes(app.releaseNotes!)),
+                ),
+              ],
+              if (app.permissions != null) ...[
+                const SizedBox(height: 28),
+                _Section(title: 'Autorisations', child: _Permissions(app: app)),
+              ],
+              const SizedBox(height: 28),
+              _Section(title: 'Informations', child: _Infos(app: app)),
             ],
           );
         },
@@ -125,7 +140,7 @@ class _Stats extends StatelessWidget {
           sep(),
           cell(app.latestVersion ?? '—', 'Version'),
           sep(),
-          cell(app.android.isEmpty ? '—' : 'Android ${app.android}', 'Compatible'),
+          cell(app.androidLabel, 'Compatible'),
         ],
       ),
     );
@@ -322,6 +337,194 @@ class _LeaveNote extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+// ---------- « À quoi s'attendre » ----------
+
+String frenchDate(DateTime d) {
+  const months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  final l = d.toLocal();
+  return '${l.day} ${months[l.month - 1]} ${l.year}';
+}
+
+/// Notes de version écrites en Markdown → texte simple.
+String cleanNotes(String md) {
+  var t = md.replaceAll('\r', '');
+  t = t.replaceAll(RegExp(r'<[^>]+>'), '');
+  t = t.replaceAllMapped(RegExp(r'!?\[([^\]]*)\]\([^)]*\)'), (m) => m.group(1) ?? '');
+  t = t.replaceAll(RegExp(r'^#{1,6}\s*', multiLine: true), '');
+  t = t.replaceAll(RegExp(r'^\s*[-*+]\s+', multiLine: true), '• ');
+  t = t.replaceAll(RegExp(r'[*_`]{1,3}'), '');
+  t = t.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+  return t.trim();
+}
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child, this.trailing});
+
+  final String title;
+  final String? trailing;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Expanded(child: Text(title, style: W.title(18))),
+            if (trailing != null) Text(trailing!, style: W.body(13, color: W.muted)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        child,
+      ],
+    );
+  }
+}
+
+class _Expandable extends StatefulWidget {
+  const _Expandable({required this.text});
+
+  final String text;
+
+  @override
+  State<_Expandable> createState() => _ExpandableState();
+}
+
+class _ExpandableState extends State<_Expandable> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final long = widget.text.length > 280 || '\n'.allMatches(widget.text).length > 5;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.text,
+          maxLines: _open || !long ? null : 5,
+          overflow: _open || !long ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: W.body(14, color: W.soft).copyWith(height: 1.5),
+        ),
+        if (long)
+          TextButton(
+            onPressed: () => setState(() => _open = !_open),
+            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 44)),
+            child: Text(_open ? 'Voir moins' : 'Voir plus',
+                style: W.body(14, color: W.accent, weight: FontWeight.w600)),
+          ),
+      ],
+    );
+  }
+}
+
+class _Permissions extends StatefulWidget {
+  const _Permissions({required this.app});
+
+  final AppEntry app;
+
+  @override
+  State<_Permissions> createState() => _PermissionsState();
+}
+
+class _PermissionsState extends State<_Permissions> {
+  bool _all = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = describePermissions(widget.app.permissions ?? const []);
+    if (d.shown.isEmpty) {
+      return Text("Cette appli ne demande aucune autorisation particulière.",
+          style: W.body(14, color: W.soft));
+    }
+    final visible = _all ? d.shown : d.shown.take(5).toList();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      decoration: BoxDecoration(
+        color: W.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: W.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Cette appli pourra :', style: W.body(13, color: W.muted)),
+          ),
+          for (final p in visible)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Icon(p.icon, size: 20, color: p.sensitive ? W.orange : W.muted),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(p.label, style: W.body(14))),
+                ],
+              ),
+            ),
+          if (d.shown.length > 5)
+            TextButton(
+              onPressed: () => setState(() => _all = !_all),
+              style: TextButton.styleFrom(
+                  alignment: Alignment.centerLeft, padding: EdgeInsets.zero, minimumSize: const Size(0, 44)),
+              child: Text(_all ? 'Voir moins' : 'Voir les ${d.shown.length} autorisations',
+                  style: W.body(14, color: W.accent, weight: FontWeight.w600)),
+            ),
+          if (d.technical > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 10),
+              child: Text(
+                d.technical == 1
+                    ? '+ 1 autorisation technique sans accès à tes données'
+                    : '+ ${d.technical} autorisations techniques sans accès à tes données',
+                style: W.body(12, color: W.muted),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Infos extends StatelessWidget {
+  const _Infos({required this.app});
+
+  final AppEntry app;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <(String, String)>[
+      ('Créateur', app.developer.isEmpty ? '—' : app.developer),
+      ('Version', app.latestVersion ?? '—'),
+      if (app.updatedAt != null) ('Mise à jour', frenchDate(app.updatedAt!)),
+      ('Taille', formatSize(app.size)),
+      ('Android requis', app.androidLabel),
+      ('Catégorie', app.category),
+      ('Code source', app.openSource ? 'Open source (github.com/${app.github})' : 'Fermé'),
+    ];
+    return Column(
+      children: [
+        for (final r in rows)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: W.line))),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: 130, child: Text(r.$1, style: W.body(14, color: W.muted))),
+                Expanded(child: Text(r.$2, style: W.body(14))),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

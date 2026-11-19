@@ -1,4 +1,4 @@
-name: Logos des applis
+name: Logos et infos des applis
 
 on:
   push:
@@ -27,12 +27,12 @@ jobs:
 
       - name: Enregistrer les logos
         run: |
-          git add icons
+          git add icons meta
           if git diff --cached --quiet; then
             echo "Aucun logo nouveau."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Logos des applis mis à jour"
+            git commit -m "Logos et infos des applis mis à jour"
             git push
           fi

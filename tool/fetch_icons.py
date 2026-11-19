@@ -18,6 +18,7 @@ import zipfile
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 OUT = pathlib.Path("icons")
 OUT.mkdir(exist_ok=True)
+META = pathlib.Path("meta")
 
 
 def api(url):
@@ -169,25 +170,49 @@ def icon_from_store_pages(app):
     return None
 
 
+def apk_info(apk, aapt):
+    """Ce que l'APK déclare : autorisations, Android minimum, version."""
+    out = subprocess.run([aapt, "dump", "badging", apk], capture_output=True, text=True).stdout
+    perms = sorted(set(re.findall(r"uses-permission: name='([^']+)'", out)))
+    sdk = re.search(r"sdkVersion:'(\d+)'", out)
+    ver = re.search(r"versionName='([^']*)'", out)
+    return {
+        "permissions": perms,
+        "minSdk": int(sdk.group(1)) if sdk else None,
+        "versionName": ver.group(1) if ver else None,
+    }
+
+
 def main():
     catalog = json.load(open("catalog.json"))
     aapt = find_aapt()
+    META.mkdir(exist_ok=True)
     changed = False
     for app in catalog["apps"]:
         dest = OUT / f"{app['id']}.png"
-        if app.get("keepIcon") and dest.exists():
-            print(app["name"], ": logo fourni, gardé")
-            continue
+        keep = app.get("keepIcon") and dest.exists()
         try:
             rel = api(f"https://api.github.com/repos/{app['github']}/releases/latest")
             pat = re.compile(app.get("asset", r"\.apk$"))
             asset = next(a for a in rel["assets"] if pat.search(a["name"]))
             apk = f"/tmp/{app['id']}.apk"
             download(asset["browser_download_url"], apk)
-            data = icon_from_apk(apk, aapt)
+            info = apk_info(apk, aapt)
+            data = None if keep else icon_from_apk(apk, aapt)
             os.remove(apk)
         except Exception as e:  # une appli en erreur ne bloque pas les autres
             print(app["name"], ": erreur", e)
+            continue
+
+        meta = META / f"{app['id']}.json"
+        text = json.dumps(info, ensure_ascii=False, indent=2) + "\n"
+        if not meta.exists() or meta.read_text() != text:
+            meta.write_text(text)
+            changed = True
+            print(app["name"], ": infos mises à jour", len(info["permissions"]), "autorisations")
+
+        if keep:
+            print(app["name"], ": logo fourni, gardé")
             continue
         if not data:
             # Icône dessinée en vectoriel dans l'APK : on prend le logo publié
