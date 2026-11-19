@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "apps": [
+    {
+      "id": "com.wifensor.wifensor",
+      "name": "Wifensor",
+      "developer": "Rody-241",
+      "tagline": "Protège ton Wi-Fi des intrus",
+      "category": "Outils réseau",
+      "icon": "shield",
+      "color": "#3DDC97",
+      "github": "Rody-241/wifensor",
+      "asset": "^Wifensor\\.apk$",
+      "android": "7+",
+      "featured": true,
+      "openSource": false,
+      "description": "Vois qui est connecté à ton Wi-Fi et bloque les appareils que tu ne connais pas. Compatible avec les box Airtel.",
+      "screenshots": []
+    },
+    {
+      "id": "com.termux",
+      "name": "Termux",
+      "developer": "Termux",
+      "tagline": "Un terminal Linux dans ta poche",
+      "category": "Outils",
+      "icon": "terminal",
+      "color": "#C9D1DC",
+      "github": "termux/termux-app",
+      "asset": "universal\\.apk$",
+      "android": "7+",
+      "featured": false,
+      "openSource": true,
+      "description": "Lance des commandes Linux sur ton téléphone : Python, Git, SSH et des milliers d'autres outils.",
+      "screenshots": []
+    },
+    {
+      "id": "moe.shizuku.privileged.api",
+      "name": "Shizuku",
+      "developer": "RikkaApps",
+      "tagline": "Des super-pouvoirs pour tes applis, sans root",
+      "category": "Système",
+      "icon": "target",
+      "color": "#5CC8D6",
+      "github": "RikkaApps/Shizuku",
+      "asset": "\\.apk$",
+      "android": "7+",
+      "featured": false,
+      "openSource": true,
+      "description": "Permet à des applis comme WouStore d'installer d'autres applis directement, grâce au débogage sans fil.",
+      "screenshots": []
+    },
+    {
+      "id": "org.schabi.newpipe",
+      "name": "NewPipe",
+      "developer": "TeamNewPipe",
+      "tagline": "Des vidéos sans pub",
+      "category": "Vidéo",
+      "icon": "play",
+      "color": "#FF8A5C",
+      "github": "TeamNewPipe/NewPipe",
+      "asset": "\\.apk$",
+      "android": "5+",
+      "featured": false,
+      "openSource": true,
+      "description": "Lecteur vidéo léger et open source pour YouTube et d'autres sites, avec lecture en arrière-plan et téléchargements.",
+      "screenshots": []
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+name: Fabriquer l'appli Android
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'catalog.json'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Générer le dossier Android
+        run: |
+          flutter create --org com.woustore --project-name woustore --platforms=android .
+          rm -rf test
+          cp catalog.json assets/catalog.json
+          python3 tool/patch_android.py
+
+      - name: Clé de signature fixe (mêmes clés pour toutes les versions)
+        env:
+          WOUSTORE_KEY_PASSWORD: ${{ secrets.WOUSTORE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$WOUSTORE_KEY_PASSWORD" ]; then
+            echo "::error::Le secret WOUSTORE_KEY_PASSWORD manque : ajoute-le dans Settings › Secrets and variables › Actions."
+            exit 1
+          fi
+          mkdir -p ~/.android
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in signing/woustore-key.enc -out ~/.android/debug.keystore \
+            -pass env:WOUSTORE_KEY_PASSWORD
+          keytool -list -keystore ~/.android/debug.keystore -storepass android | grep -i "SHA-256"
+
+      - name: Installer les dépendances
+        run: flutter pub get
+
+      - name: Vérifier le code
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Fabriquer l'APK
+        run: |
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk WouStore.apk
+          ls -la *.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WouStore-apk
+          path: WouStore.apk
+
+      - name: Publier en téléchargement
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: WouStore (essai ${{ github.run_number }})
+          body: WouStore.apk fonctionne sur tous les téléphones Android 7 et plus récents.
+          files: WouStore.apk
