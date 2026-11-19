@@ -52,6 +52,74 @@ def to_png(data):
     return out.getvalue()
 
 
+def resource_values(apk, aapt):
+    """id de ressource -> liste de valeurs (chemins de fichiers ou couleurs)."""
+    out = subprocess.run([aapt, "dump", "--values", "resources", apk], capture_output=True, text=True).stdout
+    values, current = {}, None
+    for line in out.splitlines():
+        m = re.match(r"\s*resource (0x[0-9a-f]+) \S+: t=(0x[0-9a-f]+) d=(0x[0-9a-f]+)", line)
+        if m:
+            current = int(m.group(1), 16)
+            t, d = int(m.group(2), 16), int(m.group(3), 16)
+            if 0x1c <= t <= 0x1f:  # couleur
+                values.setdefault(current, []).append(("color", d))
+            continue
+        m = re.match(r'\s*\((?:string8|string16)\) "(res/[^"]+)"', line)
+        if m and current is not None:
+            values.setdefault(current, []).append(("file", m.group(1)))
+    return values
+
+
+def layer_image(ref, values, z, size):
+    from PIL import Image
+    files = [v for k, v in values.get(ref, []) if k == "file" and v.endswith((".png", ".webp"))]
+    colors = [v for k, v in values.get(ref, []) if k == "color"]
+    if files:
+        best = max(files, key=lambda f: z.getinfo(f).file_size if f in z.namelist() else 0)
+        if best in z.namelist():
+            import io
+            return Image.open(io.BytesIO(z.read(best))).convert("RGBA").resize((size, size), Image.LANCZOS)
+    if colors:
+        c = colors[0]
+        return Image.new("RGBA", (size, size), ((c >> 16) & 255, (c >> 8) & 255, c & 255, (c >> 24) & 255 or 255))
+    return None
+
+
+def compose_adaptive(apk, aapt, xml_path, z):
+    try:
+        tree = subprocess.run([aapt, "dump", "xmltree", apk, xml_path], capture_output=True, text=True).stdout
+        refs, layer = {}, None
+        for line in tree.splitlines():
+            m = re.search(r"E: (background|foreground)", line)
+            if m:
+                layer = m.group(1)
+                continue
+            m = re.search(r"android:drawable\([^)]*\)=@(0x[0-9a-f]+)", line)
+            if m and layer and layer not in refs:
+                refs[layer] = int(m.group(1), 16)
+        if "foreground" not in refs:
+            return None
+        values = resource_values(apk, aapt)
+        size = 432  # 108 dp en xxxhdpi
+        fg = layer_image(refs["foreground"], values, z, size)
+        if fg is None:
+            return None
+        from PIL import Image
+        bg = layer_image(refs.get("background", -1), values, z, size) or Image.new("RGBA", (size, size), (255, 255, 255, 255))
+        bg.alpha_composite(fg)
+        # Android n'affiche que les 72 dp du centre.
+        m = size * 18 // 108
+        icon = bg.crop((m, m, size - m, size - m)).resize((192, 192), Image.LANCZOS)
+        import io
+        out = io.BytesIO()
+        icon.save(out, "PNG")
+        print("  icône adaptative assemblée depuis", xml_path)
+        return out.getvalue()
+    except Exception as e:
+        print("  icône adaptative impossible :", e)
+        return None
+
+
 def icon_from_apk(apk, aapt):
     out = subprocess.run([aapt, "dump", "badging", apk], capture_output=True, text=True).stdout
     # application-icon-640:'res/xx.png'  → on garde les PNG, de la plus grande à la plus petite.
@@ -62,7 +130,13 @@ def icon_from_apk(apk, aapt):
         for _, path in icons:
             if path.endswith((".png", ".webp")) and path in names:
                 return to_png(z.read(path))
-        # Icône adaptative seulement : on cherche une image ic_launcher en PNG.
+        # Icône adaptative : on assemble le fond et le dessin, comme le fait Android.
+        for _, path in icons:
+            if path.endswith(".xml"):
+                data = compose_adaptive(apk, aapt, path, z)
+                if data:
+                    return data
+        # Sinon : une image ic_launcher en PNG.
         cands = [n for n in names if re.search(r"mipmap-[a-z]*hdpi[^/]*/ic_launcher(_round)?\.(png|webp)$", n)]
         cands.sort(key=lambda n: ("xxxhdpi" in n, "xxhdpi" in n, "xhdpi" in n), reverse=True)
         if cands:
