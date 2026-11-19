@@ -6,6 +6,9 @@ on:
     paths-ignore:
       - 'catalog.json'
       - 'README.md'
+      - 'icons/**'
+      - 'tool/fetch_icons.py'
+      - '.github/workflows/icons.yml'
   workflow_dispatch:
 
 permissions:

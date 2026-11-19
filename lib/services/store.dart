@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -39,6 +40,10 @@ class Store extends ChangeNotifier {
 
   /// absent | off | ask | old | ready
   String shizuku = 'absent';
+
+  /// Icônes réelles des applis installées (lues sur le téléphone).
+  final Map<String, Uint8List> iconBytes = {};
+  bool _askedNotifications = false;
 
   final Map<String, AppState> _states = {};
   final Map<String, bool> _cancel = {};
@@ -165,6 +170,12 @@ class Store extends ChangeNotifier {
         .invokeMethod<String>('installedVersion', {'package': id});
     final s = stateOf(id);
     s.installedVersion = v;
+    if (v != null && !iconBytes.containsKey(id)) {
+      try {
+        final png = await _ch.invokeMethod<Uint8List>('icon', {'package': id});
+        if (png != null) iconBytes[id] = png;
+      } catch (_) {}
+    }
     if (s.busy) return;
     if (v != null) {
       s.phase = Phase.installed;
@@ -198,6 +209,11 @@ class Store extends ChangeNotifier {
   Future<void> install(AppEntry a) async {
     final s = stateOf(a.id);
     if (s.busy) return;
+    if (!_askedNotifications) {
+      // Demandée au premier téléchargement seulement, pas au lancement.
+      _askedNotifications = true;
+      await _ch.invokeMethod('askNotifications');
+    }
     s
       ..phase = Phase.downloading
       ..progress = 0

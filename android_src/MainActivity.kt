@@ -85,11 +85,6 @@ class MainActivity : FlutterActivity() {
                 NotificationChannel(notifChannel, "Installations", NotificationManager.IMPORTANCE_DEFAULT)
             )
         }
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
-        }
         try {
             Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
             Shizuku.addBinderReceivedListenerSticky(shizukuBinderListener)
@@ -138,6 +133,15 @@ class MainActivity : FlutterActivity() {
                     } else {
                         result.success(false)
                     }
+                }
+                "icon" -> result.success(iconOf(call.argument<String>("package") ?: ""))
+                "askNotifications" -> {
+                    if (Build.VERSION.SDK_INT >= 33 &&
+                        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+                    }
+                    result.success(null)
                 }
                 "shizukuStatus" -> result.success(shizukuStatus())
                 "shizukuRequest" -> {
@@ -277,6 +281,23 @@ class MainActivity : FlutterActivity() {
         return try {
             packageManager.getPackageInfo(pkg, 0).versionName ?: ""
         } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
+
+    /** L'icône de l'appli installée, telle que le téléphone l'affiche, en PNG. */
+    private fun iconOf(pkg: String): ByteArray? {
+        return try {
+            val drawable = packageManager.getApplicationIcon(pkg)
+            val size = 192
+            val bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bitmap)
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(canvas)
+            val out = java.io.ByteArrayOutputStream()
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+            out.toByteArray()
+        } catch (e: Throwable) {
             null
         }
     }

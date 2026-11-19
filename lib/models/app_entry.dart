@@ -17,7 +17,11 @@ class AppEntry {
     required this.openSource,
     required this.description,
     required this.screenshots,
+    required this.iconUrl,
   });
+
+  static const iconBase =
+      'https://raw.githubusercontent.com/Rody-241/woustore/main/icons';
 
   /// Nom du paquet Android, par exemple com.wifensor.wifensor.
   final String id;
@@ -38,6 +42,10 @@ class AppEntry {
   final bool openSource;
   final String description;
   final List<String> screenshots;
+
+  /// Le logo officiel de l'appli (PNG). Par défaut : icons/<id>.png du dépôt WouStore,
+  /// extrait automatiquement de l'APK publié par le créateur.
+  final String iconUrl;
 
   // Rempli après lecture de la dernière version sur GitHub.
   String? downloadUrl;
@@ -61,6 +69,7 @@ class AppEntry {
       openSource: (j['openSource'] ?? false) as bool,
       description: (j['description'] ?? '') as String,
       screenshots: ((j['screenshots'] ?? const []) as List).cast<String>(),
+      iconUrl: (j['iconUrl'] as String?) ?? '$iconBase/${j['id']}.png',
     );
   }
 

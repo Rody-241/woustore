@@ -15,7 +15,8 @@
       "featured": true,
       "openSource": false,
       "description": "Vois qui est connecté à ton Wi-Fi et bloque les appareils que tu ne connais pas. Compatible avec les box Airtel.",
-      "screenshots": []
+      "screenshots": [],
+      "keepIcon": true
     },
     {
       "id": "com.termux",

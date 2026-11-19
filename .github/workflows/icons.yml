@@ -1,0 +1,36 @@
+name: Logos des applis
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'catalog.json'
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Récupérer le vrai logo de chaque appli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tool/fetch_icons.py
+
+      - name: Enregistrer les logos
+        run: |
+          git add icons
+          if git diff --cached --quiet; then
+            echo "Aucun logo nouveau."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Logos des applis mis à jour"
+            git push
+          fi
