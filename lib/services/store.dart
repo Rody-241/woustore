@@ -133,6 +133,14 @@ class Store extends ChangeNotifier {
           'https://api.github.com/repos/${a.github}/releases/latest'));
       final j = jsonDecode(txt) as Map<String, dynamic>;
       final re = RegExp(a.assetPattern);
+      final videoRe = RegExp(r'\.(mp4|webm|mkv|3gp)$', caseSensitive: false);
+      for (final item in (j['assets'] as List)) {
+        final asset = Map<String, dynamic>.from(item as Map);
+        if (a.videoUrl == null && videoRe.hasMatch(asset['name'] as String)) {
+          a.videoUrl = asset['browser_download_url'] as String;
+          a.videoSize = (asset['size'] as num).toInt();
+        }
+      }
       for (final item in (j['assets'] as List)) {
         final asset = Map<String, dynamic>.from(item as Map);
         final name = asset['name'] as String;

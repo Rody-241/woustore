@@ -6,6 +6,7 @@ import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/install_button.dart';
+import '../widgets/video_preview.dart';
 
 /// Fiche d'une appli, avec la progression de l'installation.
 class AppScreen extends StatelessWidget {
@@ -65,6 +66,12 @@ class AppScreen extends StatelessWidget {
                 const SizedBox(height: 22),
                 const _LeaveNote(),
               ],
+              if (app.videoUrl != null) ...[
+                const SizedBox(height: 26),
+                Text('Aperçu', style: W.title(18)),
+                const SizedBox(height: 12),
+                VideoPreview(url: app.videoUrl!, size: app.videoSize),
+              ],
               if (app.screenshots.isNotEmpty) ...[
                 const SizedBox(height: 26),
                 Text("Captures d'écran", style: W.title(18)),
@@ -94,10 +101,6 @@ class AppScreen extends StatelessWidget {
                   trailing: app.updatedAt == null ? null : frenchDate(app.updatedAt!),
                   child: _Expandable(text: cleanNotes(app.releaseNotes!)),
                 ),
-              ],
-              if (app.permissions != null) ...[
-                const SizedBox(height: 28),
-                _Section(title: 'Autorisations', child: _Permissions(app: app)),
               ],
               const SizedBox(height: 28),
               _Section(title: 'Informations', child: _Infos(app: app)),
@@ -444,7 +447,8 @@ class _PermissionsState extends State<_Permissions> {
       return Text("Cette appli ne demande aucune autorisation particulière.",
           style: W.body(14, color: W.soft));
     }
-    final visible = _all ? d.shown : d.shown.take(5).toList();
+    final showAll = _all || d.shown.length <= 8;
+    final visible = showAll ? d.shown : d.shown.take(5).toList();
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
       decoration: BoxDecoration(
@@ -470,7 +474,7 @@ class _PermissionsState extends State<_Permissions> {
                 ],
               ),
             ),
-          if (d.shown.length > 5)
+          if (d.shown.length > 8)
             TextButton(
               onPressed: () => setState(() => _all = !_all),
               style: TextButton.styleFrom(
@@ -499,6 +503,51 @@ class _Infos extends StatelessWidget {
 
   final AppEntry app;
 
+  Widget _permissionsRow(BuildContext context, List<String> perms) {
+    final d = describePermissions(perms);
+    final n = d.shown.length;
+    return InkWell(
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: W.bg,
+        isScrollControlled: true,
+        showDragHandle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (_) => SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Autorisations de ${app.name}', style: W.title(20)),
+                const SizedBox(height: 14),
+                _Permissions(app: app),
+              ],
+            ),
+          ),
+        ),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: W.line))),
+        child: Row(
+          children: [
+            SizedBox(width: 130, child: Text('Autorisations', style: W.body(14, color: W.muted))),
+            Expanded(
+              child: Text(
+                n == 0 ? 'Aucune particulière' : n == 1 ? '1 autorisation' : '$n autorisations',
+                style: W.body(14),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: W.muted),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final rows = <(String, String)>[
@@ -510,8 +559,10 @@ class _Infos extends StatelessWidget {
       ('Catégorie', app.category),
       ('Code source', app.openSource ? 'Open source (github.com/${app.github})' : 'Fermé'),
     ];
+    final perms = app.permissions;
     return Column(
       children: [
+        if (perms != null) _permissionsRow(context, perms),
         for (final r in rows)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12),

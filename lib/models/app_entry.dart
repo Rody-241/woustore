@@ -55,6 +55,11 @@ class AppEntry {
   String? latestVersion;
   String? resolveError;
   String? releaseNotes;
+
+  /// Vidéo d'aperçu : champ « video » du catalogue, sinon le fichier .mp4/.webm
+  /// joint par le créateur à sa dernière version sur GitHub.
+  String? videoUrl;
+  int? videoSize;
   DateTime? updatedAt;
 
   // Lu dans meta/<id>.json (extrait automatiquement de l'APK).
@@ -78,7 +83,7 @@ class AppEntry {
       description: (j['description'] ?? '') as String,
       screenshots: ((j['screenshots'] ?? const []) as List).cast<String>(),
       iconUrl: (j['iconUrl'] as String?) ?? '$iconBase/${j['id']}.png',
-    );
+    )..videoUrl = j['video'] as String?;
   }
 
   static Color _parseColor(String hex) {
