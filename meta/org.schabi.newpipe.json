@@ -14,5 +14,6 @@
     "org.schabi.newpipe.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
   ],
   "minSdk": 23,
-  "versionName": "0.29.3"
+  "versionName": "0.29.3",
+  "versionCode": 1017
 }

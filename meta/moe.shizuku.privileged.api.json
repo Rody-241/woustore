@@ -8,5 +8,6 @@
     "moe.shizuku.manager.permission.MANAGER"
   ],
   "minSdk": 24,
-  "versionName": "13.6.0.r1086.2650830c"
+  "versionName": "13.6.0.r1086.2650830c",
+  "versionCode": 1086
 }

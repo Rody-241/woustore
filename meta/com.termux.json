@@ -18,5 +18,6 @@
     "com.android.alarm.permission.SET_ALARM"
   ],
   "minSdk": 24,
-  "versionName": "0.118.3"
+  "versionName": "0.118.3",
+  "versionCode": 1002
 }
