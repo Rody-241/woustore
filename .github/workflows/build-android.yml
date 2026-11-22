@@ -59,7 +59,7 @@ jobs:
       - name: Vérifier le code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: Fabriquer l'APK (léger : un fichier par type de téléphone)
+      - name: "Fabriquer l'APK léger, un fichier par type de téléphone"
         run: |
           # Numéro de version qui augmente à chaque fabrication : WouStore sait ainsi qu'il y a du nouveau.
           V="--build-number=${{ github.run_number }} --build-name=1.0.${{ github.run_number }}"
