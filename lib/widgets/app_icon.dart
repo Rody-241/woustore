@@ -20,6 +20,12 @@ IconData iconFor(String name) {
       return Icons.menu_book_outlined;
     case 'music':
       return Icons.music_note_outlined;
+    case 'build':
+      return Icons.handyman_outlined;
+    case 'wifi':
+      return Icons.wifi_rounded;
+    case 'chat':
+      return Icons.forum_outlined;
     default:
       return Icons.apps_rounded;
   }

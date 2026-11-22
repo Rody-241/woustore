@@ -16,6 +16,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _tab = 0;
+
+  /// Catégorie choisie sur l'accueil (null = tout).
+  String? _category;
   final _query = TextEditingController();
   final _searchFocus = FocusNode();
 
@@ -99,8 +102,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _home(Store store) {
-    final featured = store.visibleApps.where((a) => a.featured).toList();
-    final list = store.visibleApps;
+    final cats = store.usedCategories;
+    final cat = cats.any((c) => c.$1 == _category) ? _category : null;
+    final featured = cat == null
+        ? store.visibleApps.where((a) => a.featured).toList()
+        : <AppEntry>[];
+    final list = cat == null
+        ? store.visibleApps
+        : store.visibleApps.where((a) => a.category == cat).toList();
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
@@ -113,6 +122,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _SelfUpdateBanner(app: store.selfApp!),
           const SizedBox(height: 20),
         ],
+        if (cats.length > 1) ...[
+          _CategoryBar(
+            categories: cats,
+            selected: cat,
+            onSelect: (c) => setState(() => _category = c),
+          ),
+          const SizedBox(height: 20),
+        ],
         if (featured.isNotEmpty) ...[
           _FeaturedCard(app: featured.first, onTap: () => _openApp(featured.first)),
           const SizedBox(height: 28),
@@ -121,8 +138,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Expanded(child: Text('Toutes les applis', style: W.title(20))),
-            Text('${list.length} applis', style: W.body(13, color: W.muted)),
+            Expanded(child: Text(cat ?? 'Toutes les applis', style: W.title(20))),
+            Text(list.length == 1 ? '1 appli' : '${list.length} applis',
+                style: W.body(13, color: W.muted)),
           ],
         ),
         const SizedBox(height: 8),
@@ -571,6 +589,64 @@ class _SelfUpdateBanner extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           InstallButton(app),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// La rangée de catégories qui défile : « Tout », « Jeux », « Outils »…
+class _CategoryBar extends StatelessWidget {
+  const _CategoryBar({
+    required this.categories,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final List<(String, String)> categories;
+  final String? selected;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget chip(String label, IconData icon, bool on, VoidCallback tap) {
+      return Material(
+        color: on ? W.accent : W.surface,
+        shape: StadiumBorder(side: BorderSide(color: on ? W.accent : W.border)),
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: tap,
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: on ? W.onAccent : W.muted),
+                const SizedBox(width: 8),
+                Text(label,
+                    style: W.body(14,
+                        color: on ? W.onAccent : W.soft,
+                        weight: on ? FontWeight.w700 : FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        children: [
+          chip('Tout', Icons.apps_rounded, selected == null, () => onSelect(null)),
+          for (final c in categories) ...[
+            const SizedBox(width: 8),
+            chip(c.$1, iconFor(c.$2), selected == c.$1, () => onSelect(c.$1)),
+          ],
         ],
       ),
     );

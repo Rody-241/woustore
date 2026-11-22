@@ -37,6 +37,14 @@ class Store extends ChangeNotifier {
       'https://raw.githubusercontent.com/Rody-241/woustore/main/catalog.json';
 
   List<AppEntry> apps = [];
+
+  /// Catégories du catalogue : (nom, icône).
+  List<(String, String)> categories = [];
+
+  /// Seulement les catégories qui ont au moins une appli.
+  List<(String, String)> get usedCategories => categories
+      .where((c) => visibleApps.any((a) => a.category == c.$1))
+      .toList();
   bool loading = true;
   String? loadError;
 
@@ -173,6 +181,10 @@ class Store extends ChangeNotifier {
     }
     try {
       final j = jsonDecode(raw) as Map<String, dynamic>;
+      categories = ((j['categories'] ?? const []) as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .map((m) => (m['name'] as String, (m['icon'] ?? 'apps') as String))
+          .toList();
       apps = (j['apps'] as List)
           .map((e) => AppEntry.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();

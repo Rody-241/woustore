@@ -1,12 +1,46 @@
 {
   "version": 1,
+  "categories": [
+    {
+      "name": "Jeux",
+      "icon": "game"
+    },
+    {
+      "name": "Outils",
+      "icon": "build"
+    },
+    {
+      "name": "Réseau",
+      "icon": "wifi"
+    },
+    {
+      "name": "Vidéo",
+      "icon": "play"
+    },
+    {
+      "name": "Musique",
+      "icon": "music"
+    },
+    {
+      "name": "Éducation",
+      "icon": "book"
+    },
+    {
+      "name": "Réseaux sociaux",
+      "icon": "chat"
+    },
+    {
+      "name": "Système",
+      "icon": "target"
+    }
+  ],
   "apps": [
     {
       "id": "com.wifensor.wifensor",
       "name": "Wifensor",
       "developer": "Rody-241",
       "tagline": "Protège ton Wi-Fi des intrus",
-      "category": "Outils réseau",
+      "category": "Réseau",
       "icon": "shield",
       "color": "#3DDC97",
       "github": "Rody-241/wifensor",
