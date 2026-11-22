@@ -102,12 +102,16 @@ object Installer {
 
     /** Appelé par Android quand un téléchargement se termine, même si WouStore est fermé. */
     fun onDownloadComplete(ctx: Context, id: Long, finished: () -> Unit) {
-        val info = prefs(ctx).getString("dl_$id", null)
+        // Appelé par Android OU par l'écran de WouStore : une seule installation.
+        val info = synchronized(this) {
+            val i = prefs(ctx).getString("dl_$id", null)
+            if (i != null) prefs(ctx).edit().remove("dl_$id").commit()
+            i
+        }
         if (info == null) {
             finished()
             return
         }
-        prefs(ctx).edit().remove("dl_$id").apply()
         val pkg = info.substringBefore("|")
         val name = info.substringAfter("|")
         val st = status(ctx, id)
@@ -646,6 +650,10 @@ class MainActivity : FlutterActivity() {
                     result.success(null)
                 }
                 "pendingDownloads" -> result.success(Installer.pending(this))
+                "installDownloaded" -> {
+                    Installer.onDownloadComplete(applicationContext, (call.argument<Number>("id") ?: -1).toLong()) {}
+                    result.success(null)
+                }
                 "takeIncomingFile" -> {
                     result.success(incoming)
                     incoming = null

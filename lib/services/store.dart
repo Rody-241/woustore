@@ -441,6 +441,10 @@ class Store extends ChangeNotifier {
           t.cancel();
           _polls.remove(pkg);
           if (s.phase == Phase.downloading) s.phase = Phase.installing;
+          // Certains téléphones (HiOS…) ne transmettent pas « téléchargement fini » :
+          // WouStore lance donc l'installation lui-même.
+          _ch.invokeMethod('installDownloaded', {'id': id});
+          _watchdog(pkg);
           break;
         case 'failed':
           t.cancel();
@@ -458,6 +462,19 @@ class Store extends ChangeNotifier {
           s.phase = Phase.downloading;
       }
       notifyListeners();
+    });
+  }
+
+  /// Si l'installation ne donne pas de nouvelles, on ne laisse pas tourner le cercle sans fin.
+  void _watchdog(String pkg) {
+    Timer(const Duration(minutes: 3), () {
+      final s = stateOf(pkg);
+      if (s.phase == Phase.installing) {
+        s
+          ..phase = Phase.error
+          ..error = "L'installation n'a pas abouti. Vérifie que Shizuku est actif, puis réessaie.";
+        notifyListeners();
+      }
     });
   }
 
