@@ -56,6 +56,14 @@ class AppScreen extends StatelessWidget {
               _Stats(app: app),
               const SizedBox(height: 22),
               if (s.busy) _Progress(app: app, s: s) else InstallButton(app, big: true),
+              if (Store.i.otherSource(app)) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Cette version a été installée depuis une autre source (Play Store, F-Droid…). '
+                  'WouStore ne peut pas la mettre à jour : continue avec ta source habituelle.',
+                  style: W.body(13, color: W.orange).copyWith(height: 1.45),
+                ),
+              ],
               if (s.phase == Phase.error && s.error != null) ...[
                 const SizedBox(height: 12),
                 Text(s.error!, style: W.body(14, color: W.red)),

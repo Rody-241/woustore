@@ -170,6 +170,14 @@ def icon_from_store_pages(app):
     return None
 
 
+def apk_cert(apk, aapt):
+    """Empreinte SHA-256 du certificat qui signe l'APK (avec apksigner)."""
+    apksigner = os.path.join(os.path.dirname(aapt), "apksigner")
+    out = subprocess.run([apksigner, "verify", "--print-certs", apk], capture_output=True, text=True).stdout
+    m = re.search(r"certificate SHA-256 digest: ([0-9a-f]{64})", out)
+    return m.group(1) if m else None
+
+
 def apk_info(apk, aapt):
     """Ce que l'APK déclare : autorisations, Android minimum, version."""
     out = subprocess.run([aapt, "dump", "badging", apk], capture_output=True, text=True).stdout
@@ -200,6 +208,7 @@ def main():
             apk = f"/tmp/{app['id']}.apk"
             download(asset["browser_download_url"], apk)
             info = apk_info(apk, aapt)
+            info["cert"] = apk_cert(apk, aapt)
             data = None if keep else icon_from_apk(apk, aapt)
             os.remove(apk)
         except Exception as e:  # une appli en erreur ne bloque pas les autres

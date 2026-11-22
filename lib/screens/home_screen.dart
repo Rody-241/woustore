@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/install_button.dart';
 import 'app_screen.dart';
+import 'categories_screen.dart';
 import 'install_file_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -121,13 +122,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _home(Store store) {
     final cats = store.usedCategories;
-    final cat = cats.any((c) => c.$1 == _category) ? _category : null;
+    // « Jeux » regroupe toutes les catégories de jeux.
+    final cat = _category == 'Jeux' || cats.any((c) => c.$1 == _category) ? _category : null;
     final featured = cat == null
         ? store.visibleApps.where((a) => a.featured).toList()
         : <AppEntry>[];
     final list = cat == null
         ? store.visibleApps
-        : store.visibleApps.where((a) => a.category == cat).toList();
+        : cat == 'Jeux'
+            ? store.games
+            : store.appsIn(cat);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
@@ -140,14 +144,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _SelfUpdateBanner(app: store.selfApp!),
           const SizedBox(height: 20),
         ],
-        if (cats.length > 1) ...[
-          _CategoryBar(
-            categories: cats,
-            selected: cat,
-            onSelect: (c) => setState(() => _category = c),
+        _CategoryBar(
+          categories: cats,
+          selected: cat,
+          onSelect: (c) => setState(() => _category = c),
+          onAll: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => CategoriesScreen(onOpenApp: _openApp)),
           ),
-          const SizedBox(height: 20),
-        ],
+        ),
+        const SizedBox(height: 20),
         if (featured.isNotEmpty) ...[
           _FeaturedCard(app: featured.first, onTap: () => _openApp(featured.first)),
           const SizedBox(height: 28),
@@ -157,13 +162,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Expanded(child: Text(cat ?? 'Toutes les applis', style: W.title(20))),
-            Text(list.length == 1 ? '1 appli' : '${list.length} applis',
-                style: W.body(13, color: W.muted)),
+            if (list.isNotEmpty)
+              Text(list.length == 1 ? '1 appli' : '${list.length} applis',
+                  style: W.body(13, color: W.muted)),
           ],
         ),
         const SizedBox(height: 8),
+        if (list.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Text(
+              cat == 'Jeux'
+                  ? 'Pas encore de jeux. Ils arrivent bientôt !'
+                  : 'Pas encore d’appli dans cette catégorie.',
+              textAlign: TextAlign.center,
+              style: W.body(15, color: W.muted),
+            ),
+          ),
         for (var i = 0; i < list.length; i++)
-          _AppRow(
+          AppRow(
             app: list[i],
             last: i == list.length - 1,
             onTap: () => _openApp(list[i]),
@@ -230,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         for (var i = 0; i < results.length; i++)
-          _AppRow(
+          AppRow(
             app: results[i],
             last: i == results.length - 1,
             onTap: () => _openApp(results[i]),
@@ -281,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 4),
           for (var i = 0; i < ups.length; i++)
-            _AppRow(app: ups[i], last: i == ups.length - 1, onTap: () => _openApp(ups[i])),
+            AppRow(app: ups[i], last: i == ups.length - 1, onTap: () => _openApp(ups[i])),
           const SizedBox(height: 24),
         ],
         Text('Mes applis', style: W.title(20)),
@@ -296,11 +313,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         for (var i = 0; i < mine.length; i++)
-          _AppRow(
+          AppRow(
             app: mine[i],
             last: i == mine.length - 1,
             onTap: () => _openApp(mine[i]),
           ),
+        const SizedBox(height: 32),
+        Center(
+          child: Text(
+            'WouStore version ${store.selfVersion ?? '—'}',
+            style: W.body(12, color: W.muted),
+          ),
+        ),
       ],
     );
   }
@@ -473,8 +497,8 @@ class _FeaturedCard extends StatelessWidget {
   }
 }
 
-class _AppRow extends StatelessWidget {
-  const _AppRow({required this.app, required this.last, required this.onTap});
+class AppRow extends StatelessWidget {
+  const AppRow({required this.app, required this.last, required this.onTap});
 
   final AppEntry app;
   final bool last;
@@ -614,58 +638,76 @@ class _SelfUpdateBanner extends StatelessWidget {
 }
 
 
-/// La rangée de catégories qui défile : « Tout », « Jeux », « Outils »…
+/// La rangée qui défile : « Tout », « Jeux », les catégories qui ont des applis,
+/// puis « Catégories » pour les voir toutes.
 class _CategoryBar extends StatelessWidget {
   const _CategoryBar({
     required this.categories,
     required this.selected,
     required this.onSelect,
+    required this.onAll,
   });
 
-  final List<(String, String)> categories;
+  final List<(String, String, bool)> categories;
   final String? selected;
   final ValueChanged<String?> onSelect;
+  final VoidCallback onAll;
 
   @override
   Widget build(BuildContext context) {
-    Widget chip(String label, IconData icon, bool on, VoidCallback tap) {
-      return Material(
-        color: on ? W.accent : W.surface,
-        shape: StadiumBorder(side: BorderSide(color: on ? W.accent : W.border)),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: tap,
-          child: Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 18, color: on ? W.onAccent : W.muted),
-                const SizedBox(width: 8),
-                Text(label,
-                    style: W.body(14,
-                        color: on ? W.onAccent : W.soft,
-                        weight: on ? FontWeight.w700 : FontWeight.w500)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return SizedBox(
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         children: [
-          chip('Tout', Icons.apps_rounded, selected == null, () => onSelect(null)),
+          CategoryChip('Tout', Icons.apps_rounded, selected == null, () => onSelect(null)),
+          const SizedBox(width: 8),
+          CategoryChip('Jeux', Icons.sports_esports_outlined, selected == 'Jeux', () => onSelect('Jeux')),
           for (final c in categories) ...[
             const SizedBox(width: 8),
-            chip(c.$1, iconFor(c.$2), selected == c.$1, () => onSelect(c.$1)),
+            CategoryChip(c.$1, iconFor(c.$2), selected == c.$1, () => onSelect(c.$1)),
           ],
+          const SizedBox(width: 8),
+          CategoryChip('Catégories', Icons.grid_view_rounded, false, onAll, outlined: true),
         ],
+      ),
+    );
+  }
+}
+
+class CategoryChip extends StatelessWidget {
+  const CategoryChip(this.label, this.icon, this.on, this.onTap, {super.key, this.outlined = false});
+
+  final String label;
+  final IconData icon;
+  final bool on;
+  final VoidCallback onTap;
+  final bool outlined;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: on ? W.accent : (outlined ? W.bg : W.surface),
+      shape: StadiumBorder(side: BorderSide(color: on ? W.accent : W.border)),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: on ? W.onAccent : (outlined ? W.accent : W.muted)),
+              const SizedBox(width: 8),
+              Text(label,
+                  style: W.body(14,
+                      color: on ? W.onAccent : (outlined ? W.accent : W.soft),
+                      weight: on || outlined ? FontWeight.w700 : FontWeight.w500)),
+            ],
+          ),
+        ),
       ),
     );
   }

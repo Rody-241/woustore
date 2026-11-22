@@ -743,9 +743,29 @@ class MainActivity : FlutterActivity() {
             mapOf(
                 "versionName" to (info.versionName ?: ""),
                 "versionCode" to code,
-                "updatedAt" to info.lastUpdateTime
+                "updatedAt" to info.lastUpdateTime,
+                "cert" to certOf(pkg)
             )
         } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
+
+    /** Empreinte SHA-256 du certificat de signature de l'appli installée. */
+    private fun certOf(pkg: String): String? {
+        return try {
+            val bytes = if (Build.VERSION.SDK_INT >= 28) {
+                val info = packageManager.getPackageInfo(pkg, PackageManager.GET_SIGNING_CERTIFICATES)
+                info.signingInfo?.apkContentsSigners?.firstOrNull()?.toByteArray()
+            } else {
+                @Suppress("DEPRECATION")
+                val info = packageManager.getPackageInfo(pkg, PackageManager.GET_SIGNATURES)
+                @Suppress("DEPRECATION")
+                info.signatures?.firstOrNull()?.toByteArray()
+            } ?: return null
+            java.security.MessageDigest.getInstance("SHA-256").digest(bytes)
+                .joinToString("") { "%02x".format(it) }
+        } catch (e: Throwable) {
             null
         }
     }

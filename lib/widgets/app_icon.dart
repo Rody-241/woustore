@@ -5,30 +5,60 @@ import '../services/store.dart';
 import '../theme.dart';
 
 IconData iconFor(String name) {
-  switch (name) {
-    case 'shield':
-      return Icons.shield_outlined;
-    case 'terminal':
-      return Icons.terminal_rounded;
-    case 'target':
-      return Icons.adjust_rounded;
-    case 'play':
-      return Icons.smart_display_outlined;
-    case 'game':
-      return Icons.sports_esports_outlined;
-    case 'book':
-      return Icons.menu_book_outlined;
-    case 'music':
-      return Icons.music_note_outlined;
-    case 'build':
-      return Icons.handyman_outlined;
-    case 'wifi':
-      return Icons.wifi_rounded;
-    case 'chat':
-      return Icons.forum_outlined;
-    default:
-      return Icons.apps_rounded;
-  }
+  const icons = <String, IconData>{
+    'shield': Icons.shield_outlined,
+    'terminal': Icons.terminal_rounded,
+    'target': Icons.adjust_rounded,
+    'play': Icons.smart_display_outlined,
+    'game': Icons.sports_esports_outlined,
+    'book': Icons.menu_book_outlined,
+    'music': Icons.music_note_outlined,
+    'build': Icons.handyman_outlined,
+    'wifi': Icons.wifi_rounded,
+    'chat': Icons.forum_outlined,
+    'people': Icons.groups_outlined,
+    'star': Icons.theater_comedy_outlined,
+    'camera': Icons.photo_camera_outlined,
+    'library': Icons.local_library_outlined,
+    'check': Icons.task_alt_rounded,
+    'money': Icons.payments_outlined,
+    'bag': Icons.shopping_bag_outlined,
+    'news': Icons.newspaper_outlined,
+    'health': Icons.favorite_border_rounded,
+    'sports': Icons.sports_soccer_outlined,
+    'travel': Icons.flight_outlined,
+    'map': Icons.map_outlined,
+    'food': Icons.restaurant_outlined,
+    'spa': Icons.spa_outlined,
+    'palette': Icons.palette_outlined,
+    'weather': Icons.wb_sunny_outlined,
+    'work': Icons.business_center_outlined,
+    'brush': Icons.brush_outlined,
+    'comic': Icons.auto_stories_outlined,
+    'home': Icons.home_outlined,
+    'family': Icons.family_restroom_outlined,
+    'medical': Icons.medical_services_outlined,
+    'car': Icons.directions_car_outlined,
+    'beauty': Icons.face_retouching_natural_outlined,
+    'heart': Icons.favorite_outline_rounded,
+    'event': Icons.event_outlined,
+    'code': Icons.code_rounded,
+    'action': Icons.flash_on_outlined,
+    'explore': Icons.explore_outlined,
+    'arcade': Icons.videogame_asset_outlined,
+    'board': Icons.grid_on_outlined,
+    'cards': Icons.style_outlined,
+    'casino': Icons.casino_outlined,
+    'smile': Icons.sentiment_satisfied_alt_outlined,
+    'puzzle': Icons.extension_outlined,
+    'race': Icons.sports_motorsports_outlined,
+    'sim': Icons.precision_manufacturing_outlined,
+    'strategy': Icons.military_tech_outlined,
+    'quiz': Icons.quiz_outlined,
+    'words': Icons.abc_rounded,
+  };
+  return icons[name] ?? Icons.apps_rounded;
+}
 }
 
 /// Le logo d'une appli, tel que son créateur l'a fait :

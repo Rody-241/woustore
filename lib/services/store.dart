@@ -17,6 +17,7 @@ class AppState {
   int total = 0;
   String? installedVersion;
   int? installedCode;
+  String? installedCert;
   DateTime? installedAt;
   String? error;
 
@@ -35,13 +36,26 @@ class Store extends ChangeNotifier {
 
   List<AppEntry> apps = [];
 
-  /// Catégories du catalogue : (nom, icône).
-  List<(String, String)> categories = [];
+  /// Catégories du catalogue : (nom, icône, est-ce un jeu).
+  List<(String, String, bool)> categories = [];
 
-  /// Seulement les catégories qui ont au moins une appli.
-  List<(String, String)> get usedCategories => categories
+  List<(String, String, bool)> get appCategories => categories.where((c) => !c.$3).toList();
+  List<(String, String, bool)> get gameCategories => categories.where((c) => c.$3).toList();
+
+  /// Seulement les catégories d'applis qui ont au moins une appli.
+  List<(String, String, bool)> get usedCategories => appCategories
       .where((c) => visibleApps.any((a) => a.category == c.$1))
       .toList();
+
+  bool isGame(AppEntry a) => gameCategories.any((c) => c.$1 == a.category);
+
+  List<AppEntry> appsIn(String category) =>
+      visibleApps.where((a) => a.category == category).toList();
+
+  List<AppEntry> get games => visibleApps.where(isGame).toList();
+
+  /// Version de WouStore installée, pour l'afficher.
+  String? get selfVersion => stateOf(selfId).installedVersion;
   bool loading = true;
   String? loadError;
 
@@ -111,6 +125,8 @@ class Store extends ChangeNotifier {
   bool hasUpdate(AppEntry a) {
     final s = stateOf(a.id);
     if (s.installedVersion == null) return false;
+    // Installée depuis une autre source (autre signature) : la mise à jour échouerait.
+    if (otherSource(a)) return false;
     final latest = a.versionCode;
     final mine = s.installedCode;
     if (latest != null && mine != null) {
@@ -122,6 +138,13 @@ class Store extends ChangeNotifier {
     final inst = s.installedAt;
     if (pub == null || inst == null) return false;
     return pub.isAfter(inst.add(const Duration(minutes: 10)));
+  }
+
+  /// L'appli installée n'est pas signée par le même créateur que celle du catalogue.
+  bool otherSource(AppEntry a) {
+    final mine = stateOf(a.id).installedCert;
+    final theirs = a.cert;
+    return mine != null && theirs != null && mine.toLowerCase() != theirs.toLowerCase();
   }
 
   List<AppEntry> get updates =>
@@ -206,7 +229,11 @@ class Store extends ChangeNotifier {
       final j = jsonDecode(raw) as Map<String, dynamic>;
       categories = ((j['categories'] ?? const []) as List)
           .map((e) => Map<String, dynamic>.from(e as Map))
-          .map((m) => (m['name'] as String, (m['icon'] ?? 'apps') as String))
+          .map((m) => (
+                m['name'] as String,
+                (m['icon'] ?? 'apps') as String,
+                m['type'] == 'game',
+              ))
           .toList();
       apps = (j['apps'] as List)
           .map((e) => AppEntry.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -228,6 +255,7 @@ class Store extends ChangeNotifier {
       a.permissions = ((j['permissions'] ?? const []) as List).cast<String>();
       a.minSdk = (j['minSdk'] as num?)?.toInt();
       a.versionCode = (j['versionCode'] as num?)?.toInt();
+      a.cert = j['cert'] as String?;
     } catch (_) {}
   }
 
@@ -297,6 +325,7 @@ class Store extends ChangeNotifier {
     final s = stateOf(id);
     s.installedVersion = v;
     s.installedCode = (info?['versionCode'] as num?)?.toInt();
+    s.installedCert = info?['cert'] as String?;
     final at = (info?['updatedAt'] as num?)?.toInt();
     s.installedAt = at == null ? null : DateTime.fromMillisecondsSinceEpoch(at);
     if (v != null && !iconBytes.containsKey(id)) {

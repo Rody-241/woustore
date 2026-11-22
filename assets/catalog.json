@@ -2,36 +2,249 @@
   "version": 1,
   "categories": [
     {
-      "name": "Jeux",
-      "icon": "game"
-    },
-    {
       "name": "Outils",
-      "icon": "build"
+      "icon": "build",
+      "type": "app"
     },
     {
-      "name": "Réseau",
-      "icon": "wifi"
-    },
-    {
-      "name": "Vidéo",
-      "icon": "play"
-    },
-    {
-      "name": "Musique",
-      "icon": "music"
-    },
-    {
-      "name": "Éducation",
-      "icon": "book"
+      "name": "Communication",
+      "icon": "chat",
+      "type": "app"
     },
     {
       "name": "Réseaux sociaux",
-      "icon": "chat"
+      "icon": "people",
+      "type": "app"
     },
     {
-      "name": "Système",
-      "icon": "target"
+      "name": "Divertissement",
+      "icon": "star",
+      "type": "app"
+    },
+    {
+      "name": "Musique et audio",
+      "icon": "music",
+      "type": "app"
+    },
+    {
+      "name": "Lecteurs et éditeurs vidéo",
+      "icon": "play",
+      "type": "app"
+    },
+    {
+      "name": "Photographie",
+      "icon": "camera",
+      "type": "app"
+    },
+    {
+      "name": "Éducation",
+      "icon": "book",
+      "type": "app"
+    },
+    {
+      "name": "Livres et références",
+      "icon": "library",
+      "type": "app"
+    },
+    {
+      "name": "Productivité",
+      "icon": "check",
+      "type": "app"
+    },
+    {
+      "name": "Finance",
+      "icon": "money",
+      "type": "app"
+    },
+    {
+      "name": "Shopping",
+      "icon": "bag",
+      "type": "app"
+    },
+    {
+      "name": "Actualités et magazines",
+      "icon": "news",
+      "type": "app"
+    },
+    {
+      "name": "Santé et remise en forme",
+      "icon": "health",
+      "type": "app"
+    },
+    {
+      "name": "Sports",
+      "icon": "sports",
+      "type": "app"
+    },
+    {
+      "name": "Voyages et infos locales",
+      "icon": "travel",
+      "type": "app"
+    },
+    {
+      "name": "Plans et navigation",
+      "icon": "map",
+      "type": "app"
+    },
+    {
+      "name": "Alimentation et boissons",
+      "icon": "food",
+      "type": "app"
+    },
+    {
+      "name": "Style de vie",
+      "icon": "spa",
+      "type": "app"
+    },
+    {
+      "name": "Personnalisation",
+      "icon": "palette",
+      "type": "app"
+    },
+    {
+      "name": "Météo",
+      "icon": "weather",
+      "type": "app"
+    },
+    {
+      "name": "Entreprise",
+      "icon": "work",
+      "type": "app"
+    },
+    {
+      "name": "Art et design",
+      "icon": "brush",
+      "type": "app"
+    },
+    {
+      "name": "Bandes dessinées",
+      "icon": "comic",
+      "type": "app"
+    },
+    {
+      "name": "Maison",
+      "icon": "home",
+      "type": "app"
+    },
+    {
+      "name": "Parents",
+      "icon": "family",
+      "type": "app"
+    },
+    {
+      "name": "Médecine",
+      "icon": "medical",
+      "type": "app"
+    },
+    {
+      "name": "Auto et véhicules",
+      "icon": "car",
+      "type": "app"
+    },
+    {
+      "name": "Beauté",
+      "icon": "beauty",
+      "type": "app"
+    },
+    {
+      "name": "Rencontres",
+      "icon": "heart",
+      "type": "app"
+    },
+    {
+      "name": "Événements",
+      "icon": "event",
+      "type": "app"
+    },
+    {
+      "name": "Bibliothèques et démos",
+      "icon": "code",
+      "type": "app"
+    },
+    {
+      "name": "Action",
+      "icon": "action",
+      "type": "game"
+    },
+    {
+      "name": "Aventure",
+      "icon": "explore",
+      "type": "game"
+    },
+    {
+      "name": "Arcade",
+      "icon": "arcade",
+      "type": "game"
+    },
+    {
+      "name": "Plateau",
+      "icon": "board",
+      "type": "game"
+    },
+    {
+      "name": "Cartes",
+      "icon": "cards",
+      "type": "game"
+    },
+    {
+      "name": "Casino",
+      "icon": "casino",
+      "type": "game"
+    },
+    {
+      "name": "Occasionnels",
+      "icon": "smile",
+      "type": "game"
+    },
+    {
+      "name": "Éducatifs",
+      "icon": "book",
+      "type": "game"
+    },
+    {
+      "name": "Musique",
+      "icon": "music",
+      "type": "game"
+    },
+    {
+      "name": "Réflexion",
+      "icon": "puzzle",
+      "type": "game"
+    },
+    {
+      "name": "Course",
+      "icon": "race",
+      "type": "game"
+    },
+    {
+      "name": "Jeux de rôle",
+      "icon": "shield",
+      "type": "game"
+    },
+    {
+      "name": "Simulation",
+      "icon": "sim",
+      "type": "game"
+    },
+    {
+      "name": "Sport",
+      "icon": "sports",
+      "type": "game"
+    },
+    {
+      "name": "Stratégie",
+      "icon": "strategy",
+      "type": "game"
+    },
+    {
+      "name": "Questions-réponses",
+      "icon": "quiz",
+      "type": "game"
+    },
+    {
+      "name": "Mots",
+      "icon": "words",
+      "type": "game"
     }
   ],
   "apps": [
@@ -40,7 +253,7 @@
       "name": "Wifensor",
       "developer": "Rody-241",
       "tagline": "Protège ton Wi-Fi des intrus",
-      "category": "Réseau",
+      "category": "Outils",
       "icon": "shield",
       "color": "#3DDC97",
       "github": "Rody-241/wifensor",
@@ -73,7 +286,7 @@
       "name": "Shizuku",
       "developer": "RikkaApps",
       "tagline": "Des super-pouvoirs pour tes applis, sans root",
-      "category": "Système",
+      "category": "Outils",
       "icon": "target",
       "color": "#5CC8D6",
       "github": "RikkaApps/Shizuku",
@@ -89,7 +302,7 @@
       "name": "NewPipe",
       "developer": "TeamNewPipe",
       "tagline": "Des vidéos sans pub",
-      "category": "Vidéo",
+      "category": "Lecteurs et éditeurs vidéo",
       "icon": "play",
       "color": "#FF8A5C",
       "github": "TeamNewPipe/NewPipe",

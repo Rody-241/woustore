@@ -77,6 +77,9 @@ class AppEntry {
   /// Numéro de version de la dernière version publiée.
   int? versionCode;
 
+  /// Empreinte (SHA-256) du certificat qui signe l'APK publié.
+  String? cert;
+
   factory AppEntry.fromJson(Map<String, dynamic> j) {
     return AppEntry(
       id: j['id'] as String,
