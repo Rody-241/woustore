@@ -127,6 +127,7 @@ class MainActivity : FlutterActivity() {
                 "installedVersion" -> result.success(versionOf(call.argument<String>("package") ?: ""))
                 "installedInfo" -> result.success(infoOf(call.argument<String>("package") ?: ""))
                 "selfPackage" -> result.success(packageName)
+                "abis" -> result.success(Build.SUPPORTED_ABIS.toList())
                 "uninstall" -> {
                     val pkg = call.argument<String>("package") ?: ""
                     val useShizuku = call.argument<Boolean>("shizuku") ?: false

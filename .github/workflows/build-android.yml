@@ -59,25 +59,34 @@ jobs:
       - name: Vérifier le code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: Fabriquer l'APK
+      - name: Fabriquer l'APK (léger : un fichier par type de téléphone)
         run: |
           # Numéro de version qui augmente à chaque fabrication : WouStore sait ainsi qu'il y a du nouveau.
-          flutter build apk --release --build-number=${{ github.run_number }} --build-name=1.0.${{ github.run_number }}
+          V="--build-number=${{ github.run_number }} --build-name=1.0.${{ github.run_number }}"
+          # Téléphones récents (64 bits) : presque tous les Android depuis 2017.
+          flutter build apk --release --target-platform android-arm64 $V
           cp build/app/outputs/flutter-apk/app-release.apk WouStore.apk
+          # Anciens téléphones (32 bits).
+          flutter build apk --release --target-platform android-arm $V
+          cp build/app/outputs/flutter-apk/app-release.apk WouStore-32bit.apk
           ls -la *.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: WouStore-apk
-          path: WouStore.apk
+          path: WouStore*.apk
 
       - name: Publier en téléchargement
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: WouStore (essai ${{ github.run_number }})
-          body: WouStore.apk fonctionne sur tous les téléphones Android 7 et plus récents.
-          files: WouStore.apk
+          body: |
+            WouStore.apk : téléphones récents (64 bits), presque tous les Android depuis 2017.
+            WouStore-32bit.apk : anciens téléphones (32 bits).
+          files: |
+            WouStore.apk
+            WouStore-32bit.apk
 
       - name: Mettre à jour les infos du catalogue (version de WouStore)
         env:

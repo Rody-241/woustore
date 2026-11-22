@@ -81,7 +81,10 @@
       "openSource": true,
       "hidden": true,
       "description": "WouStore lui-même : cette fiche sert à ses mises à jour.",
-      "screenshots": []
+      "screenshots": [],
+      "assetsByAbi": {
+        "armeabi-v7a": "^WouStore-32bit\\.apk$"
+      }
     }
   ]
 }

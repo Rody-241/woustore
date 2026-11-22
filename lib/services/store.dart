@@ -61,6 +61,19 @@ class Store extends ChangeNotifier {
 
   String selfId = 'com.woustore.woustore';
 
+  /// Types de processeur du téléphone (arm64-v8a, armeabi-v7a…).
+  List<String> abis = const ['arm64-v8a'];
+
+  /// Le bon fichier pour ce téléphone.
+  String _patternFor(AppEntry a) {
+    if (abis.contains('arm64-v8a')) return a.assetPattern;
+    for (final abi in abis) {
+      final p = a.assetsByAbi[abi];
+      if (p != null) return p;
+    }
+    return a.assetPattern;
+  }
+
   AppEntry? get selfApp {
     for (final a in apps) {
       if (a.id == selfId) return a;
@@ -108,6 +121,7 @@ class Store extends ChangeNotifier {
     _started = true;
     _ch.setMethodCallHandler(_onNative);
     selfId = await _ch.invokeMethod<String>('selfPackage') ?? selfId;
+    abis = (await _ch.invokeMethod<List>('abis'))?.cast<String>() ?? abis;
     await refreshShizuku();
     // Au lancement, seulement la demande de notifications du téléphone.
     await _ch.invokeMethod('askNotifications');
@@ -188,7 +202,7 @@ class Store extends ChangeNotifier {
       final txt = await _getText(Uri.parse(
           'https://api.github.com/repos/${a.github}/releases/latest'));
       final j = jsonDecode(txt) as Map<String, dynamic>;
-      final re = RegExp(a.assetPattern);
+      final re = RegExp(_patternFor(a));
       final videoRe = RegExp(r'\.(mp4|webm|mkv|3gp)$', caseSensitive: false);
       for (final item in (j['assets'] as List)) {
         final asset = Map<String, dynamic>.from(item as Map);

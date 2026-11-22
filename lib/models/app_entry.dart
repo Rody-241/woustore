@@ -16,6 +16,7 @@ class AppEntry {
     required this.featured,
     required this.openSource,
     this.hidden = false,
+    this.assetsByAbi = const {},
     required this.description,
     required this.screenshots,
     required this.iconUrl,
@@ -43,6 +44,9 @@ class AppEntry {
   final String android;
   final bool featured;
   final bool openSource;
+
+  /// Fichier à prendre selon le type de téléphone, ex. {"armeabi-v7a": "-32bit\\.apk$"}.
+  final Map<String, String> assetsByAbi;
 
   /// Fiche cachée de la liste (WouStore lui-même, pour ses mises à jour).
   final bool hidden;
@@ -88,6 +92,7 @@ class AppEntry {
       featured: (j['featured'] ?? false) as bool,
       openSource: (j['openSource'] ?? false) as bool,
       hidden: (j['hidden'] ?? false) as bool,
+      assetsByAbi: Map<String, String>.from((j['assetsByAbi'] ?? const {}) as Map),
       description: (j['description'] ?? '') as String,
       screenshots: ((j['screenshots'] ?? const []) as List).cast<String>(),
       iconUrl: (j['iconUrl'] as String?) ?? '$iconBase/${j['id']}.png',
