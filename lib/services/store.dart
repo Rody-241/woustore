@@ -52,6 +52,28 @@ class Store extends ChangeNotifier {
   final Map<String, Uint8List> iconBytes = {};
   Completer<void>? _shizukuWait;
 
+  /// Fichier ouvert avec WouStore depuis une autre appli.
+  final incoming = ValueNotifier<Map<String, dynamic>?>(null);
+
+  Future<void> checkIncoming() async {
+    final raw = await _ch.invokeMethod<Map>('takeIncomingFile');
+    if (raw != null) incoming.value = Map<String, dynamic>.from(raw);
+  }
+
+  Future<void> watchPackage(String pkg) async {
+    await _refreshOne(pkg);
+    notifyListeners();
+  }
+
+  void markInstalling(String pkg) {
+    stateOf(pkg)
+      ..phase = Phase.installing
+      ..error = null;
+    notifyListeners();
+  }
+
+  Future<void> openPackage(String pkg) => _ch.invokeMethod('open', {'package': pkg});
+
   final Map<String, AppState> _states = {};
   bool _started = false;
 
@@ -129,6 +151,7 @@ class Store extends ChangeNotifier {
     await refreshShizuku();
     // Au lancement, seulement la demande de notifications du téléphone.
     await _ch.invokeMethod('askNotifications');
+    await checkIncoming();
     await load();
     await _resumeDownloads();
   }
@@ -142,7 +165,7 @@ class Store extends ChangeNotifier {
         if (m['ok'] == true) {
           await _refreshOne(id);
           s.phase = Phase.installed;
-          s.error = null;
+          s.error = m['message'] as String?; // avertissement éventuel (OBB)
         } else {
           s.phase = Phase.error;
           s.error = (m['message'] as String?) ?? "L'installation a échoué.";
@@ -153,6 +176,9 @@ class Store extends ChangeNotifier {
         final m = Map<String, dynamic>.from(call.arguments as Map);
         await _refreshOne(m['package'] as String);
         notifyListeners();
+        break;
+      case 'incomingFile':
+        incoming.value = Map<String, dynamic>.from(call.arguments as Map);
         break;
       case 'shizukuChanged':
         await refreshShizuku();

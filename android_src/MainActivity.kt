@@ -121,18 +121,45 @@ object Installer {
 
     // ---------- Installation ----------
 
-    private fun install(ctx: Context, file: File, pkg: String, name: String, finished: () -> Unit) {
+    /** Installe n'importe quel format : APK simple, ou archive avec morceaux et OBB. */
+    fun install(ctx: Context, file: File, pkgHint: String, nameHint: String, finished: () -> Unit) {
         io.execute {
+            var pkg = pkgHint
+            var name = nameHint
             try {
-                if (waitForShizuku(ctx) == "ready") {
-                    val out = runShizuku(arrayOf("pm", "install", "-r", "-S", file.length().toString()), file)
-                    if (out.contains("Success")) {
-                        done(ctx, pkg, name, true, null)
+                val shizuku = waitForShizuku(ctx) == "ready"
+                if (Universal.isPlainApk(file)) {
+                    if (pkg.isBlank()) {
+                        @Suppress("DEPRECATION")
+                        pkg = ctx.packageManager.getPackageArchiveInfo(file.path, 0)?.packageName ?: ""
+                    }
+                    if (shizuku) {
+                        val out = runShizuku(arrayOf("pm", "install", "-r", "-S", file.length().toString()), file)
+                        if (out.contains("Success")) done(ctx, pkg, name, true, null)
+                        else done(ctx, pkg, name, false, "Shizuku n'a pas pu installer : " + out.trim().take(200))
                     } else {
-                        done(ctx, pkg, name, false, "Shizuku n'a pas pu installer : " + out.trim().take(200))
+                        installWithSession(ctx, listOf(file), pkg, name, null)
                     }
                 } else {
-                    installWithSession(ctx, file, pkg, name)
+                    val p = Universal.prepare(ctx, file)
+                    pkg = p.pkg
+                    if (name.isBlank()) name = p.label
+                    // Les données du jeu d'abord : elles seront prêtes au premier lancement.
+                    val obbOk = Universal.copyObbs(p, shizuku)
+                    val warn = if (obbOk) null else
+                        "Installé, mais les données du jeu (OBB) n'ont pas pu être copiées."
+                    if (shizuku) {
+                        val out = installSplitsWithShizuku(p.apks)
+                        if (out.contains("Success")) done(ctx, pkg, name, true, warn)
+                        else done(ctx, pkg, name, false, "Shizuku n'a pas pu installer : " + out.trim().take(200))
+                    } else {
+                        installWithSession(ctx, p.apks, pkg, name, warn)
+                    }
+                    if (!shizuku) {
+                        // Les morceaux sont lus par Android pendant la confirmation : on les garde.
+                    } else {
+                        p.apks.firstOrNull()?.parentFile?.deleteRecursively()
+                    }
                 }
             } catch (e: Throwable) {
                 done(ctx, pkg, name, false, "L'installation a échoué : ${e.message}")
@@ -142,7 +169,23 @@ object Installer {
         }
     }
 
-    private fun installWithSession(ctx: Context, file: File, pkg: String, name: String) {
+    /** Plusieurs morceaux d'APK en une seule installation, par Shizuku. */
+    private fun installSplitsWithShizuku(apks: List<File>): String {
+        val total = apks.sumOf { it.length() }
+        val created = runShizuku(arrayOf("pm", "install-create", "-r", "-S", total.toString()), null)
+        val sid = Regex("\\[(\\d+)]").find(created)?.groupValues?.get(1)
+            ?: return "Session impossible : $created"
+        for ((i, apk) in apks.withIndex()) {
+            val out = runShizuku(arrayOf("pm", "install-write", "-S", apk.length().toString(), sid, "$i.apk", "-"), apk)
+            if (!out.contains("Success")) {
+                runShizuku(arrayOf("pm", "install-abandon", sid), null)
+                return out
+            }
+        }
+        return runShizuku(arrayOf("pm", "install-commit", sid), null)
+    }
+
+    private fun installWithSession(ctx: Context, apks: List<File>, pkg: String, name: String, warn: String?) {
         val installer = ctx.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
         if (Build.VERSION.SDK_INT >= 31) {
@@ -150,13 +193,16 @@ object Installer {
         }
         val sessionId = installer.createSession(params)
         installer.openSession(sessionId).use { session ->
-            session.openWrite("app.apk", 0, file.length()).use { out ->
-                file.inputStream().use { it.copyTo(out) }
-                session.fsync(out)
+            for ((i, file) in apks.withIndex()) {
+                session.openWrite("$i.apk", 0, file.length()).use { out ->
+                    file.inputStream().use { it.copyTo(out) }
+                    session.fsync(out)
+                }
             }
             val intent = Intent(ctx, InstallResultReceiver::class.java)
                 .putExtra("woustore_pkg", pkg)
                 .putExtra("woustore_name", name)
+                .putExtra("woustore_warn", warn)
             var flags = PendingIntent.FLAG_UPDATE_CURRENT
             if (Build.VERSION.SDK_INT >= 31) flags = flags or PendingIntent.FLAG_MUTABLE
             val sender = PendingIntent.getBroadcast(ctx, sessionId, intent, flags)
@@ -179,7 +225,7 @@ object Installer {
                     notify(ctx, "$name est prêt à installer", "Touche ici pour terminer l'installation.", confirm)
                 }
             }
-            PackageInstaller.STATUS_SUCCESS -> done(ctx, pkg, name, true, null)
+            PackageInstaller.STATUS_SUCCESS -> done(ctx, pkg, name, true, intent.getStringExtra("woustore_warn"))
             PackageInstaller.STATUS_FAILURE_ABORTED -> done(ctx, pkg, name, false, "Installation annulée.")
             PackageInstaller.STATUS_FAILURE_CONFLICT ->
                 done(ctx, pkg, name, false, "Une autre version de $name est déjà installée. Désinstalle-la d'abord.")
@@ -300,6 +346,176 @@ object Installer {
     }
 }
 
+
+/**
+ * L'installateur universel : APK simple, XAPK, APKS, APKM ou ZIP contenant
+ * plusieurs morceaux d'APK et des données de jeu (OBB). WouStore fait tout seul
+ * ce que l'utilisateur devait faire à la main.
+ */
+object Universal {
+    class Prepared(
+        val pkg: String,
+        val label: String,
+        val apks: List<File>,
+        val obbs: List<Pair<File, String>>, // fichier, nom dans Android/obb/<paquet>/
+    )
+
+    fun isPlainApk(file: File): Boolean = try {
+        java.util.zip.ZipFile(file).use { it.getEntry("AndroidManifest.xml") != null }
+    } catch (e: Throwable) {
+        false
+    }
+
+    private fun apkEntries(zip: java.util.zip.ZipFile) =
+        zip.entries().toList().filter { !it.isDirectory && it.name.lowercase().endsWith(".apk") }
+
+    private fun obbEntries(zip: java.util.zip.ZipFile) =
+        zip.entries().toList().filter { !it.isDirectory && it.name.lowercase().endsWith(".obb") }
+
+    private val abiTokens = listOf(
+        "arm64_v8a" to "arm64-v8a", "armeabi_v7a" to "armeabi-v7a",
+        "x86_64" to "x86_64", "x86" to "x86", "armeabi" to "armeabi",
+    )
+
+    private fun abiOf(name: String): String? {
+        val n = name.lowercase().replace('-', '_')
+        return abiTokens.firstOrNull { n.contains(it.first) }?.second
+    }
+
+    /** Ne garder que les morceaux faits pour ce téléphone (type de processeur). */
+    private fun keepForDevice(names: List<String>): List<String> {
+        val supported = Build.SUPPORTED_ABIS.toList()
+        val present = names.mapNotNull { abiOf(it) }.toSet()
+        val best = supported.firstOrNull { it in present }
+        return names.filter { val abi = abiOf(it); abi == null || abi == best }
+    }
+
+    private fun baseEntry(zip: java.util.zip.ZipFile, apks: List<java.util.zip.ZipEntry>): java.util.zip.ZipEntry? {
+        val byName = apks.firstOrNull { it.name.substringAfterLast('/').lowercase() == "base.apk" }
+        if (byName != null) return byName
+        val noSplit = apks.filter { e ->
+            val n = e.name.substringAfterLast('/').lowercase()
+            !n.startsWith("split") && !n.startsWith("config.") && !n.contains(".config.")
+        }
+        return (noSplit.ifEmpty { apks }).maxByOrNull { it.size }
+    }
+
+    private fun extract(zip: java.util.zip.ZipFile, entry: java.util.zip.ZipEntry, dest: File): File {
+        dest.parentFile?.mkdirs()
+        zip.getInputStream(entry).use { input -> dest.outputStream().use { input.copyTo(it) } }
+        return dest
+    }
+
+    private fun archiveInfo(ctx: Context, apk: File): Map<String, Any?> {
+        val pm = ctx.packageManager
+        @Suppress("DEPRECATION")
+        val info = pm.getPackageArchiveInfo(apk.path, 0) ?: return emptyMap()
+        val app = info.applicationInfo ?: return mapOf("package" to info.packageName)
+        app.sourceDir = apk.path
+        app.publicSourceDir = apk.path
+        val icon = try {
+            val d = app.loadIcon(pm)
+            val bmp = android.graphics.Bitmap.createBitmap(192, 192, android.graphics.Bitmap.Config.ARGB_8888)
+            val c = android.graphics.Canvas(bmp)
+            d.setBounds(0, 0, 192, 192)
+            d.draw(c)
+            val out = java.io.ByteArrayOutputStream()
+            bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+            out.toByteArray()
+        } catch (e: Throwable) {
+            null
+        }
+        val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
+            @Suppress("DEPRECATION")
+            info.versionCode.toLong()
+        }
+        return mapOf(
+            "package" to info.packageName,
+            "label" to app.loadLabel(pm).toString(),
+            "versionName" to (info.versionName ?: ""),
+            "versionCode" to code,
+            "minSdk" to (if (Build.VERSION.SDK_INT >= 24) app.minSdkVersion else null),
+            "icon" to icon,
+        )
+    }
+
+    /** Ce que contient le fichier, sans tout décompresser. */
+    fun analyze(ctx: Context, file: File): Map<String, Any?> {
+        if (isPlainApk(file)) {
+            return archiveInfo(ctx, file) + mapOf("kind" to "apk", "size" to file.length(), "parts" to 1, "obbCount" to 0, "obbSize" to 0L)
+        }
+        val zip = try {
+            java.util.zip.ZipFile(file)
+        } catch (e: Throwable) {
+            return mapOf("kind" to "unknown", "error" to "Ce fichier n'est ni une appli ni une archive lisible.")
+        }
+        zip.use {
+            val apks = apkEntries(zip)
+            if (apks.isEmpty()) return mapOf("kind" to "unknown", "error" to "Aucune appli dans cette archive.")
+            val base = baseEntry(zip, apks)!!
+            val tmp = File(ctx.cacheDir, "analyse-base.apk")
+            extract(zip, base, tmp)
+            val info = archiveInfo(ctx, tmp)
+            tmp.delete()
+            val parts = keepForDevice(apks.map { e -> e.name })
+            val obbs = obbEntries(zip)
+            val ext = file.name.substringAfterLast('.', "").lowercase()
+            return info + mapOf(
+                "kind" to (if (ext in listOf("xapk", "apks", "apkm")) ext else "zip"),
+                "size" to file.length(),
+                "parts" to parts.size,
+                "obbCount" to obbs.size,
+                "obbSize" to obbs.sumOf { it.size },
+            )
+        }
+    }
+
+    /** Décompresse ce qu'il faut pour installer. */
+    fun prepare(ctx: Context, file: File): Prepared {
+        val dir = File(ctx.externalCacheDir ?: ctx.cacheDir, "install-" + System.currentTimeMillis())
+        dir.mkdirs()
+        java.util.zip.ZipFile(file).use { zip ->
+            val apks = apkEntries(zip)
+            val keep = keepForDevice(apks.map { it.name }).toSet()
+            val files = apks.filter { it.name in keep }.mapIndexed { i, e ->
+                extract(zip, e, File(dir, "$i-" + e.name.substringAfterLast('/')))
+            }
+            val base = baseEntry(zip, apks)!!
+            val baseFile = files[apks.filter { it.name in keep }.indexOf(base).coerceAtLeast(0)]
+            val info = archiveInfo(ctx, baseFile)
+            val pkg = info["package"] as? String ?: throw IllegalStateException("Appli illisible")
+            val obbs = obbEntries(zip).map { e ->
+                val name = e.name.substringAfterLast('/')
+                extract(zip, e, File(dir, "obb-$name")) to name
+            }
+            return Prepared(pkg, info["label"] as? String ?: pkg, files, obbs)
+        }
+    }
+
+    /** Copie les données du jeu dans Android/obb/<paquet>/. */
+    fun copyObbs(p: Prepared, shizuku: Boolean): Boolean {
+        if (p.obbs.isEmpty()) return true
+        val target = "/sdcard/Android/obb/${p.pkg}"
+        return try {
+            if (shizuku) {
+                for ((file, name) in p.obbs) {
+                    Installer.runShizuku(arrayOf("sh", "-c", "mkdir -p '$target' && cat > '$target/$name'"), file)
+                }
+                p.obbs.all { (f, name) ->
+                    Installer.runShizuku(arrayOf("stat", "-c", "%s", "$target/$name"), null).trim() == f.length().toString()
+                }
+            } else {
+                val dir = File(Environment.getExternalStorageDirectory(), "Android/obb/${p.pkg}")
+                dir.mkdirs()
+                for ((file, name) in p.obbs) file.copyTo(File(dir, name), overwrite = true)
+                true
+            }
+        } catch (e: Throwable) {
+            false
+        }
+    }
+}
+
 /** Android prévient ici quand un téléchargement est fini, même WouStore fermé. */
 class DownloadDoneReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
@@ -318,6 +534,11 @@ class InstallResultReceiver : BroadcastReceiver() {
 }
 
 class MainActivity : FlutterActivity() {
+    companion object {
+        /** Fichier reçu (« Ouvrir avec WouStore ») en attente d'affichage. */
+        var incoming: Map<String, Any?>? = null
+    }
+
     private val channelName = "woustore/installer"
     private val shizukuCode = 241
 
@@ -331,11 +552,53 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Installer.createChannel(this)
+        receiveFile(intent)
         try {
             Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
             Shizuku.addBinderReceivedListenerSticky(shizukuBinderListener)
             Shizuku.addBinderDeadListener(shizukuDeadListener)
         } catch (e: Throwable) {
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        receiveFile(intent)
+    }
+
+    /** Copie le fichier partagé ou ouvert avec WouStore, puis prévient l'écran. */
+    private fun receiveFile(intent: Intent?) {
+        if (intent == null) return
+        @Suppress("DEPRECATION")
+        val uri: Uri = when (intent.action) {
+            Intent.ACTION_VIEW -> intent.data
+            Intent.ACTION_SEND -> intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            else -> null
+        } ?: return
+        var name = "fichier.apk"
+        try {
+            contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                if (c.moveToFirst()) name = c.getString(0) ?: name
+            }
+        } catch (e: Throwable) {
+            name = uri.lastPathSegment?.substringAfterLast('/') ?: name
+        }
+        val safe = name.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        io.execute {
+            try {
+                val dir = File(externalCacheDir ?: cacheDir, "recus").apply { mkdirs() }
+                val dest = File(dir, safe)
+                contentResolver.openInputStream(uri)?.use { input -> dest.outputStream().use { input.copyTo(it) } }
+                val event = mapOf("path" to dest.path, "name" to name)
+                main.post {
+                    incoming = event
+                    Installer.channel?.invokeMethod("incomingFile", event)
+                }
+            } catch (e: Throwable) {
+                main.post {
+                    Installer.channel?.invokeMethod("incomingFile", mapOf("error" to "Impossible de lire ce fichier : ${e.message}"))
+                }
+            }
         }
     }
 
@@ -383,6 +646,26 @@ class MainActivity : FlutterActivity() {
                     result.success(null)
                 }
                 "pendingDownloads" -> result.success(Installer.pending(this))
+                "takeIncomingFile" -> {
+                    result.success(incoming)
+                    incoming = null
+                }
+                "analyzeFile" -> {
+                    val path = call.argument<String>("path") ?: ""
+                    io.execute {
+                        val info = try {
+                            Universal.analyze(this, File(path))
+                        } catch (e: Throwable) {
+                            mapOf("kind" to "unknown", "error" to "Fichier illisible : ${e.message}")
+                        }
+                        main.post { result.success(info) }
+                    }
+                }
+                "installFile" -> {
+                    Installer.install(this, File(call.argument<String>("path") ?: ""), pkgArg,
+                        call.argument<String>("name") ?: "") {}
+                    result.success(null)
+                }
                 "installedVersion" -> result.success(Installer.versionOf(this, pkgArg))
                 "installedInfo" -> result.success(infoOf(pkgArg))
                 "selfPackage" -> result.success(packageName)

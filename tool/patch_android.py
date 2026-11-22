@@ -40,6 +40,32 @@ receivers = """        <receiver android:name=".DownloadDoneReceiver" android:ex
 """
 if "ShizukuProvider" not in xml:
     xml = xml.replace("</application>", provider + "    </application>", 1)
+# « Ouvrir avec WouStore » pour les APK, XAPK, APKS, APKM et ZIP.
+mimes = [
+    "application/vnd.android.package-archive",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/octet-stream",
+    "application/xapk-package-archive",
+    "application/vnd.apkm",
+]
+data = "".join(f'                <data android:mimeType="{m}" />\n' for m in mimes)
+filters = f"""            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+{data}            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+{data}            </intent-filter>
+"""
+if "android.intent.action.SEND" not in xml:
+    # dans l'activité principale, juste avant sa fermeture
+    i = xml.index('android:name=".MainActivity"')
+    j = xml.index("</activity>", i)
+    xml = xml[:j] + filters + "        " + xml[j:]
 if "DownloadDoneReceiver" not in xml:
     xml = xml.replace("</application>", receivers + "    </application>", 1)
 path.write_text(xml)

@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/install_button.dart';
 import 'app_screen.dart';
+import 'install_file_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,12 +27,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    Store.i.incoming.addListener(_onIncoming);
     Store.i.init();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    Store.i.incoming.removeListener(_onIncoming);
     _query.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -42,7 +45,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       Store.i.refreshShizuku();
       Store.i.refreshInstalled();
+      Store.i.checkIncoming();
     }
+  }
+
+  /// Un fichier a été ouvert avec WouStore : on affiche l'écran d'installation.
+  void _onIncoming() {
+    final f = Store.i.incoming.value;
+    if (f == null || !mounted) return;
+    Store.i.incoming.value = null;
+    if (f['error'] != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(f['error'] as String)));
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => InstallFileScreen(path: f['path'] as String, name: f['name'] as String),
+    ));
   }
 
   void _openApp(AppEntry a) {
