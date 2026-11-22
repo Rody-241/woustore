@@ -31,8 +31,17 @@ provider = """        <provider
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 """
+receivers = """        <receiver android:name=".DownloadDoneReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".InstallResultReceiver" android:exported="false" />
+"""
 if "ShizukuProvider" not in xml:
     xml = xml.replace("</application>", provider + "    </application>", 1)
+if "DownloadDoneReceiver" not in xml:
+    xml = xml.replace("</application>", receivers + "    </application>", 1)
 path.write_text(xml)
 print(xml)
 

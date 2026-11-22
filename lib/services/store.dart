@@ -23,9 +23,6 @@ class AppState {
   bool get busy => phase == Phase.downloading || phase == Phase.installing;
 }
 
-class _Cancelled implements Exception {
-  const _Cancelled();
-}
 
 /// Le cœur de WouStore : catalogue, téléchargements et installations.
 class Store extends ChangeNotifier {
@@ -56,7 +53,6 @@ class Store extends ChangeNotifier {
   Completer<void>? _shizukuWait;
 
   final Map<String, AppState> _states = {};
-  final Map<String, bool> _cancel = {};
   bool _started = false;
 
   AppState stateOf(String id) => _states.putIfAbsent(id, () => AppState());
@@ -134,6 +130,7 @@ class Store extends ChangeNotifier {
     // Au lancement, seulement la demande de notifications du téléphone.
     await _ch.invokeMethod('askNotifications');
     await load();
+    await _resumeDownloads();
   }
 
   Future<dynamic> _onNative(MethodCall call) async {
@@ -317,9 +314,11 @@ class Store extends ChangeNotifier {
     await _ch.invokeMethod('open', {'package': a.id});
   }
 
-  void cancel(AppEntry a) => _cancel[a.id] = true;
 
   // ---------- Installation ----------
+
+  final Map<String, int> _downloadIds = {};
+  final Map<String, Timer> _polls = {};
 
   Future<void> install(AppEntry a) async {
     final s = stateOf(a.id);
@@ -347,66 +346,84 @@ class Store extends ChangeNotifier {
       }
     }
 
-    final dir = await _ch.invokeMethod<String>('cacheDir');
-    final file = File('$dir/${a.id}.apk');
-    final client = HttpClient();
-    _cancel[a.id] = false;
+    // Le téléchargement est confié à Android : il continue quand on quitte
+    // WouStore, reprend après une coupure, puis l'installation se lance seule.
     try {
-      final rq = await client.getUrl(Uri.parse(a.downloadUrl!));
-      rq.headers.set(HttpHeaders.userAgentHeader, 'WouStore');
-      final rs = await rq.close();
-      if (rs.statusCode != 200) throw HttpException('HTTP ${rs.statusCode}');
-      final total = rs.contentLength > 0 ? rs.contentLength : (a.size ?? 0);
-      s.total = total;
-      final sink = file.openWrite();
-      var last = DateTime.now();
-      try {
-        await for (final chunk in rs) {
-          if (_cancel[a.id] == true) throw const _Cancelled();
-          sink.add(chunk);
-          s.received += chunk.length;
-          if (total > 0) s.progress = s.received / total;
-          final now = DateTime.now();
-          if (now.difference(last).inMilliseconds > 150) {
-            last = now;
-            notifyListeners();
-          }
-        }
-      } finally {
-        await sink.close();
-      }
-    } on _Cancelled {
-      s.phase = Phase.idle;
-      notifyListeners();
-      if (await file.exists()) await file.delete();
-      return;
-    } catch (_) {
-      s
-        ..phase = Phase.error
-        ..error = 'Le téléchargement a échoué. Vérifie ta connexion.';
-      notifyListeners();
-      return;
-    } finally {
-      client.close(force: true);
-    }
-
-    s
-      ..phase = Phase.installing
-      ..progress = 1;
-    notifyListeners();
-    try {
-      await _ch.invokeMethod('install', {
-        'path': file.path,
+      final id = await _ch.invokeMethod<int>('download', {
+        'url': a.downloadUrl,
         'package': a.id,
         'name': a.name,
-        'shizuku': shizuku == 'ready',
       });
-      // Le résultat arrive ensuite par « installResult ».
+      _follow(a.id, id!);
     } on PlatformException catch (e) {
       s
         ..phase = Phase.error
-        ..error = e.message ?? "L'installation a échoué.";
+        ..error = e.message ?? 'Le téléchargement a échoué.';
       notifyListeners();
     }
+  }
+
+  /// Suit la progression d'un téléchargement (pour la barre et le pourcentage).
+  void _follow(String pkg, int id) {
+    _downloadIds[pkg] = id;
+    _polls[pkg]?.cancel();
+    _polls[pkg] = Timer.periodic(const Duration(milliseconds: 700), (t) async {
+      final s = stateOf(pkg);
+      Map<String, dynamic> st;
+      try {
+        st = Map<String, dynamic>.from(
+            await _ch.invokeMethod<Map>('downloadStatus', {'id': id}) ?? const {});
+      } catch (_) {
+        return;
+      }
+      final status = st['status'] as String? ?? 'gone';
+      s.received = (st['received'] as num?)?.toInt() ?? s.received;
+      final total = (st['total'] as num?)?.toInt() ?? 0;
+      if (total > 0) s.total = total;
+      if (s.total > 0) s.progress = (s.received / s.total).clamp(0, 1).toDouble();
+      switch (status) {
+        case 'done':
+          t.cancel();
+          _polls.remove(pkg);
+          if (s.phase == Phase.downloading) s.phase = Phase.installing;
+          break;
+        case 'failed':
+          t.cancel();
+          _polls.remove(pkg);
+          s
+            ..phase = Phase.error
+            ..error = 'Le téléchargement a échoué. Vérifie ta connexion et réessaie.';
+          break;
+        case 'gone':
+          t.cancel();
+          _polls.remove(pkg);
+          if (s.phase == Phase.downloading) s.phase = Phase.idle;
+          break;
+        default:
+          s.phase = Phase.downloading;
+      }
+      notifyListeners();
+    });
+  }
+
+  /// Après un redémarrage de WouStore : reprendre l'affichage des téléchargements en cours.
+  Future<void> _resumeDownloads() async {
+    final list = await _ch.invokeMethod<List>('pendingDownloads') ?? const [];
+    for (final item in list) {
+      final m = Map<String, dynamic>.from(item as Map);
+      final pkg = m['package'] as String;
+      stateOf(pkg).phase = Phase.downloading;
+      _follow(pkg, (m['id'] as num).toInt());
+    }
+    if (list.isNotEmpty) notifyListeners();
+  }
+
+  void cancel(AppEntry a) {
+    final id = _downloadIds[a.id];
+    if (id != null) _ch.invokeMethod('cancelDownload', {'id': id});
+    _polls.remove(a.id)?.cancel();
+    final s = stateOf(a.id);
+    s.phase = s.installedVersion != null ? Phase.installed : Phase.idle;
+    notifyListeners();
   }
 }
