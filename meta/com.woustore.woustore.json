@@ -11,7 +11,7 @@
     "moe.shizuku.manager.permission.API_V23"
   ],
   "minSdk": 24,
-  "versionName": "1.0.14",
-  "versionCode": 14,
+  "versionName": "1.0.15",
+  "versionCode": 15,
   "cert": "a8c820259bf1b2dd4948626d4f14eccbe153b3a7f8349e63eeb2bb0616b4ce71"
 }
