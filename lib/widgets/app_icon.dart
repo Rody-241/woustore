@@ -59,7 +59,6 @@ IconData iconFor(String name) {
   };
   return icons[name] ?? Icons.apps_rounded;
 }
-}
 
 /// Le logo d'une appli, tel que son créateur l'a fait :
 /// 1. appli installée → l'icône que le téléphone affiche ;
