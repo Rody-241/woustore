@@ -15,6 +15,7 @@ class AppEntry {
     required this.android,
     required this.featured,
     required this.openSource,
+    this.hidden = false,
     required this.description,
     required this.screenshots,
     required this.iconUrl,
@@ -42,6 +43,9 @@ class AppEntry {
   final String android;
   final bool featured;
   final bool openSource;
+
+  /// Fiche cachée de la liste (WouStore lui-même, pour ses mises à jour).
+  final bool hidden;
   final String description;
   final List<String> screenshots;
 
@@ -66,6 +70,9 @@ class AppEntry {
   List<String>? permissions;
   int? minSdk;
 
+  /// Numéro de version de la dernière version publiée.
+  int? versionCode;
+
   factory AppEntry.fromJson(Map<String, dynamic> j) {
     return AppEntry(
       id: j['id'] as String,
@@ -80,6 +87,7 @@ class AppEntry {
       android: (j['android'] ?? '') as String,
       featured: (j['featured'] ?? false) as bool,
       openSource: (j['openSource'] ?? false) as bool,
+      hidden: (j['hidden'] ?? false) as bool,
       description: (j['description'] ?? '') as String,
       screenshots: ((j['screenshots'] ?? const []) as List).cast<String>(),
       iconUrl: (j['iconUrl'] as String?) ?? '$iconBase/${j['id']}.png',

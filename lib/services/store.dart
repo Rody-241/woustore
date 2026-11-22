@@ -16,6 +16,8 @@ class AppState {
   int received = 0;
   int total = 0;
   String? installedVersion;
+  int? installedCode;
+  DateTime? installedAt;
   String? error;
 
   bool get busy => phase == Phase.downloading || phase == Phase.installing;
@@ -51,13 +53,61 @@ class Store extends ChangeNotifier {
 
   AppState stateOf(String id) => _states.putIfAbsent(id, () => AppState());
 
+  /// Les applis visibles dans le magasin (sans la fiche de WouStore lui-même).
+  List<AppEntry> get visibleApps => apps.where((a) => !a.hidden).toList();
+
   List<AppEntry> get installedApps =>
-      apps.where((a) => stateOf(a.id).installedVersion != null).toList();
+      visibleApps.where((a) => stateOf(a.id).installedVersion != null).toList();
+
+  String selfId = 'com.woustore.woustore';
+
+  AppEntry? get selfApp {
+    for (final a in apps) {
+      if (a.id == selfId) return a;
+    }
+    return null;
+  }
+
+  /// Une version plus récente que celle installée est publiée.
+  bool hasUpdate(AppEntry a) {
+    final s = stateOf(a.id);
+    if (s.installedVersion == null) return false;
+    final latest = a.versionCode;
+    final mine = s.installedCode;
+    if (latest != null && mine != null) {
+      if (latest > mine) return true;
+      if (latest < mine) return false;
+    }
+    // Même numéro (ou inconnu) : on compare la date de publication à la date d'installation.
+    final pub = a.updatedAt;
+    final inst = s.installedAt;
+    if (pub == null || inst == null) return false;
+    return pub.isAfter(inst.add(const Duration(minutes: 10)));
+  }
+
+  List<AppEntry> get updates =>
+      installedApps.where(hasUpdate).toList();
+
+  bool get selfUpdate {
+    final me = selfApp;
+    return me != null && hasUpdate(me);
+  }
+
+  Future<void> updateAll() async {
+    for (final a in updates) {
+      await install(a);
+    }
+  }
+
+  Future<void> uninstall(AppEntry a) async {
+    await _ch.invokeMethod('uninstall', {'package': a.id, 'shizuku': shizuku == 'ready'});
+  }
 
   Future<void> init() async {
     if (_started) return;
     _started = true;
     _ch.setMethodCallHandler(_onNative);
+    selfId = await _ch.invokeMethod<String>('selfPackage') ?? selfId;
     await refreshShizuku();
     // Au lancement, seulement la demande de notifications du téléphone.
     await _ch.invokeMethod('askNotifications');
@@ -78,6 +128,11 @@ class Store extends ChangeNotifier {
           s.phase = Phase.error;
           s.error = (m['message'] as String?) ?? "L'installation a échoué.";
         }
+        notifyListeners();
+        break;
+      case 'uninstallResult':
+        final m = Map<String, dynamic>.from(call.arguments as Map);
+        await _refreshOne(m['package'] as String);
         notifyListeners();
         break;
       case 'shizukuChanged':
@@ -123,6 +178,7 @@ class Store extends ChangeNotifier {
           Uri.parse('${AppEntry.metaBase}/${a.id}.json'))) as Map<String, dynamic>;
       a.permissions = ((j['permissions'] ?? const []) as List).cast<String>();
       a.minSdk = (j['minSdk'] as num?)?.toInt();
+      a.versionCode = (j['versionCode'] as num?)?.toInt();
     } catch (_) {}
   }
 
@@ -186,10 +242,14 @@ class Store extends ChangeNotifier {
   }
 
   Future<void> _refreshOne(String id) async {
-    final v = await _ch
-        .invokeMethod<String>('installedVersion', {'package': id});
+    final raw = await _ch.invokeMethod<Map>('installedInfo', {'package': id});
+    final info = raw == null ? null : Map<String, dynamic>.from(raw);
+    final v = info?['versionName'] as String?;
     final s = stateOf(id);
     s.installedVersion = v;
+    s.installedCode = (info?['versionCode'] as num?)?.toInt();
+    final at = (info?['updatedAt'] as num?)?.toInt();
+    s.installedAt = at == null ? null : DateTime.fromMillisecondsSinceEpoch(at);
     if (v != null && !iconBytes.containsKey(id)) {
       try {
         final png = await _ch.invokeMethod<Uint8List>('icon', {'package': id});

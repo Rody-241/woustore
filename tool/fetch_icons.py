@@ -176,10 +176,12 @@ def apk_info(apk, aapt):
     perms = sorted(set(re.findall(r"uses-permission: name='([^']+)'", out)))
     sdk = re.search(r"sdkVersion:'(\d+)'", out)
     ver = re.search(r"versionName='([^']*)'", out)
+    code = re.search(r"versionCode='(\d+)'", out)
     return {
         "permissions": perms,
         "minSdk": int(sdk.group(1)) if sdk else None,
         "versionName": ver.group(1) if ver else None,
+        "versionCode": int(code.group(1)) if code else None,
     }
 
 

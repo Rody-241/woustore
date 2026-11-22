@@ -65,6 +65,23 @@
       "openSource": true,
       "description": "Lecteur vidéo léger et open source pour YouTube et d'autres sites, avec lecture en arrière-plan et téléchargements.",
       "screenshots": []
+    },
+    {
+      "id": "com.woustore.woustore",
+      "name": "WouStore",
+      "developer": "Rody-241",
+      "tagline": "Le magasin d'applis",
+      "category": "Outils",
+      "icon": "apps",
+      "color": "#3DDC97",
+      "github": "Rody-241/woustore",
+      "asset": "^WouStore\\.apk$",
+      "android": "7+",
+      "featured": false,
+      "openSource": true,
+      "hidden": true,
+      "description": "WouStore lui-même : cette fiche sert à ses mises à jour.",
+      "screenshots": []
     }
   ]
 }

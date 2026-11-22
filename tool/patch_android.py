@@ -13,6 +13,7 @@ perms = [
     "android.permission.REQUEST_INSTALL_PACKAGES",
     "android.permission.QUERY_ALL_PACKAGES",
     "android.permission.POST_NOTIFICATIONS",
+    "android.permission.REQUEST_DELETE_PACKAGES",
 ]
 lines = "".join(
     f'    <uses-permission android:name="{p}"/>\n' for p in perms if p not in xml

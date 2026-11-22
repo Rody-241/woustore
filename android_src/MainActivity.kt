@@ -125,6 +125,27 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "cacheDir" -> result.success(cacheDir.absolutePath)
                 "installedVersion" -> result.success(versionOf(call.argument<String>("package") ?: ""))
+                "installedInfo" -> result.success(infoOf(call.argument<String>("package") ?: ""))
+                "selfPackage" -> result.success(packageName)
+                "uninstall" -> {
+                    val pkg = call.argument<String>("package") ?: ""
+                    val useShizuku = call.argument<Boolean>("shizuku") ?: false
+                    if (useShizuku && shizukuStatus() == "ready") {
+                        io.execute {
+                            val out = try { runShizuku(arrayOf("pm", "uninstall", pkg), null) } catch (e: Throwable) { e.message ?: "" }
+                            main.post {
+                                result.success(null)
+                                channel?.invokeMethod("uninstallResult", mapOf("package" to pkg, "ok" to out.contains("Success")))
+                            }
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val intent = Intent(Intent.ACTION_DELETE, android.net.Uri.parse("package:$pkg"))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(intent)
+                        result.success(null)
+                    }
+                }
                 "open" -> {
                     val launch = packageManager.getLaunchIntentForPackage(call.argument<String>("package") ?: "")
                     if (launch != null) {
@@ -212,8 +233,8 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    /** Envoie l'APK à « pm install » par un processus Shizuku (droits ADB). */
-    private fun installWithShizuku(file: File): String {
+    /** Lance une commande avec les droits ADB de Shizuku ; [input] est envoyé sur son entrée. */
+    private fun runShizuku(cmd: Array<String>, input: File?): String {
         // newProcess est privé depuis Shizuku 13 : on l'appelle par réflexion.
         val method = Shizuku::class.java.getDeclaredMethod(
             "newProcess",
@@ -222,16 +243,19 @@ class MainActivity : FlutterActivity() {
             String::class.java
         )
         method.isAccessible = true
-        val cmd = arrayOf("pm", "install", "-r", "-S", file.length().toString())
         val process = method.invoke(null, cmd, null, null) as Process
-        file.inputStream().use { input ->
-            process.outputStream.use { input.copyTo(it) }
+        process.outputStream.use { out ->
+            input?.inputStream()?.use { it.copyTo(out) }
         }
-        val out = process.inputStream.bufferedReader().readText()
+        val text = process.inputStream.bufferedReader().readText()
         val err = process.errorStream.bufferedReader().readText()
         process.waitFor()
-        return out + err
+        return text + err
     }
+
+    /** Envoie l'APK à « pm install » par Shizuku. */
+    private fun installWithShizuku(file: File): String =
+        runShizuku(arrayOf("pm", "install", "-r", "-S", file.length().toString()), file)
 
     private fun done(pkg: String, name: String, ok: Boolean, message: String?) {
         main.post {
@@ -276,6 +300,23 @@ class MainActivity : FlutterActivity() {
     }
 
     // ---------- Divers ----------
+
+    private fun infoOf(pkg: String): Map<String, Any?>? {
+        return try {
+            val info = packageManager.getPackageInfo(pkg, 0)
+            val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            }
+            mapOf(
+                "versionName" to (info.versionName ?: ""),
+                "versionCode" to code,
+                "updatedAt" to info.lastUpdateTime
+            )
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
 
     private fun versionOf(pkg: String): String? {
         return try {

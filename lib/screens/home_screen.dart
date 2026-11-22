@@ -80,8 +80,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           },
         ),
       ),
-      bottomNavigationBar: _BottomBar(
+      bottomNavigationBar: ListenableBuilder(
+        listenable: Store.i,
+        builder: (context, _) => _BottomBar(
         index: _tab,
+        badge: Store.i.updates.length + (Store.i.selfUpdate ? 1 : 0),
         onTap: (i) {
           setState(() => _tab = i);
           if (i == 1) {
@@ -91,11 +94,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
         },
       ),
+      ),
     );
   }
 
   Widget _home(Store store) {
-    final featured = store.apps.where((a) => a.featured).toList();
+    final featured = store.visibleApps.where((a) => a.featured).toList();
+    final list = store.visibleApps;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
@@ -104,6 +109,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             padding: const EdgeInsets.only(bottom: 16),
             child: Text(store.loadError!, style: W.body(14, color: W.red)),
           ),
+        if (store.selfUpdate) ...[
+          _SelfUpdateBanner(app: store.selfApp!),
+          const SizedBox(height: 20),
+        ],
         if (featured.isNotEmpty) ...[
           _FeaturedCard(app: featured.first, onTap: () => _openApp(featured.first)),
           const SizedBox(height: 28),
@@ -113,15 +122,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Expanded(child: Text('Toutes les applis', style: W.title(20))),
-            Text('${store.apps.length} applis', style: W.body(13, color: W.muted)),
+            Text('${list.length} applis', style: W.body(13, color: W.muted)),
           ],
         ),
         const SizedBox(height: 8),
-        for (var i = 0; i < store.apps.length; i++)
+        for (var i = 0; i < list.length; i++)
           _AppRow(
-            app: store.apps[i],
-            last: i == store.apps.length - 1,
-            onTap: () => _openApp(store.apps[i]),
+            app: list[i],
+            last: i == list.length - 1,
+            onTap: () => _openApp(list[i]),
           ),
       ],
     );
@@ -130,8 +139,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _search(Store store) {
     final q = _normalize(_query.text.trim());
     final results = q.isEmpty
-        ? store.apps
-        : store.apps.where((a) {
+        ? store.visibleApps
+        : store.visibleApps.where((a) {
             final text = _normalize(
                 '${a.name} ${a.tagline} ${a.category} ${a.developer} ${a.description}');
             return q.split(' ').every(text.contains);
@@ -209,9 +218,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _mine(Store store) {
     final mine = store.installedApps;
+    final ups = store.updates;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
+        if (store.selfUpdate) ...[
+          _SelfUpdateBanner(app: store.selfApp!),
+          const SizedBox(height: 20),
+        ],
+        if (ups.isNotEmpty) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  ups.length == 1 ? '1 mise à jour' : '${ups.length} mises à jour',
+                  style: W.title(20),
+                ),
+              ),
+              if (ups.length > 1)
+                TextButton(
+                  onPressed: store.updateAll,
+                  child: Text('Tout mettre à jour',
+                      style: W.body(14, color: W.accent, weight: FontWeight.w700)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          for (var i = 0; i < ups.length; i++)
+            _AppRow(app: ups[i], last: i == ups.length - 1, onTap: () => _openApp(ups[i])),
+          const SizedBox(height: 24),
+        ],
         Text('Mes applis', style: W.title(20)),
         const SizedBox(height: 8),
         if (mine.isEmpty)
@@ -440,14 +476,15 @@ class _AppRow extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.index, required this.onTap});
+  const _BottomBar({required this.index, required this.onTap, this.badge = 0});
 
   final int index;
+  final int badge;
   final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
-    Widget item(int i, IconData icon, String label) {
+    Widget item(int i, IconData icon, String label, {int count = 0}) {
       final on = i == index;
       return Expanded(
         child: InkWell(
@@ -457,7 +494,13 @@ class _BottomBar extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 22, color: on ? W.accent : W.muted),
+                Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  backgroundColor: W.accent,
+                  textColor: W.onAccent,
+                  child: Icon(icon, size: 22, color: on ? W.accent : W.muted),
+                ),
                 const SizedBox(height: 4),
                 Text(label,
                     style: W.body(12,
@@ -483,10 +526,52 @@ class _BottomBar extends StatelessWidget {
             children: [
               item(0, Icons.home_outlined, 'Accueil'),
               item(1, Icons.search_rounded, 'Rechercher'),
-              item(2, Icons.grid_view_rounded, 'Mes applis'),
+              item(2, Icons.grid_view_rounded, 'Mes applis', count: badge),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// « Nouvelle version de WouStore » : se met à jour tout seul.
+class _SelfUpdateBanner extends StatelessWidget {
+  const _SelfUpdateBanner({required this.app});
+
+  final AppEntry app;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Store.i.stateOf(app.id);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F2A1F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF2B5A44)),
+      ),
+      child: Row(
+        children: [
+          const WouLogo(size: 44),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nouvelle version de WouStore', style: W.body(15, weight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(
+                  s.busy ? 'WouStore va redémarrer tout seul.' : 'Mets à jour en un toucher.',
+                  style: W.body(13, color: W.soft),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          InstallButton(app),
+        ],
       ),
     );
   }
