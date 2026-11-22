@@ -15,5 +15,6 @@
   ],
   "minSdk": 23,
   "versionName": "0.29.3",
-  "versionCode": 1017
+  "versionCode": 1017,
+  "cert": "cb84069bd68116bafae5ee4ee5b08a567aa6d898404e7cb12f9e756df5cf5cab"
 }

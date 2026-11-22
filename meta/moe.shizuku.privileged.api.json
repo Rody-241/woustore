@@ -9,5 +9,6 @@
   ],
   "minSdk": 24,
   "versionName": "13.6.0.r1086.2650830c",
-  "versionCode": 1086
+  "versionCode": 1086,
+  "cert": "268b5590e868fb08bae7e0ac413564cd1ff88f5ccff74af9dbd0dc918e30db30"
 }

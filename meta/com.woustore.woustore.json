@@ -12,5 +12,6 @@
   ],
   "minSdk": 24,
   "versionName": "1.0.12",
-  "versionCode": 12
+  "versionCode": 12,
+  "cert": "a8c820259bf1b2dd4948626d4f14eccbe153b3a7f8349e63eeb2bb0616b4ce71"
 }
