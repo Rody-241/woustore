@@ -193,8 +193,50 @@ def apk_info(apk, aapt):
     }
 
 
+FIRESTORE = ("https://firestore.googleapis.com/v1/projects/woustore-c9e0b/databases/(default)/documents/apps"
+             "?pageSize=300&key=AIzaSyBbEay6vUZU9nCraZ3pZCmKpbMsweJ4aOM")
+
+
+def _value(v):
+    """Convertit une valeur Firestore (format REST) en valeur Python."""
+    if "stringValue" in v:
+        return v["stringValue"]
+    if "booleanValue" in v:
+        return v["booleanValue"]
+    if "integerValue" in v:
+        return int(v["integerValue"])
+    if "doubleValue" in v:
+        return v["doubleValue"]
+    if "arrayValue" in v:
+        return [_value(x) for x in v["arrayValue"].get("values", [])]
+    if "mapValue" in v:
+        return {k: _value(x) for k, x in v["mapValue"].get("fields", {}).items()}
+    return None
+
+
+def published_apps():
+    """Les applis validées par l'administrateur dans WouStore (collection « apps »)."""
+    try:
+        req = urllib.request.Request(FIRESTORE, headers={"User-Agent": "WouStore"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            docs = json.load(r).get("documents", [])
+    except Exception as e:
+        print("Firestore illisible :", e)
+        return []
+    apps = []
+    for d in docs:
+        app = {k: _value(v) for k, v in d.get("fields", {}).items()}
+        app["id"] = d["name"].rsplit("/", 1)[-1]
+        if app.get("github"):
+            apps.append(app)
+    print(len(apps), "appli(s) publiée(s) par des développeurs")
+    return apps
+
+
 def main():
     catalog = json.load(open("catalog.json"))
+    known = {a["id"] for a in catalog["apps"]}
+    catalog["apps"] += [a for a in published_apps() if a["id"] not in known]
     aapt = find_aapt()
     META.mkdir(exist_ok=True)
     changed = False

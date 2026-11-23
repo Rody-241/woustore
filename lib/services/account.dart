@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -23,6 +25,11 @@ class Account extends ChangeNotifier {
   static final Account i = Account._();
 
   bool ready = false;
+
+  final _initDone = Completer<void>();
+
+  /// Terminé quand Firebase est prêt (ou a échoué).
+  Future<void> get initDone => _initDone.future;
   User? user;
   String? error;
   bool busy = false;
@@ -40,6 +47,7 @@ class Account extends ChangeNotifier {
     } catch (e) {
       error = 'Connexion indisponible : $e';
     }
+    if (!_initDone.isCompleted) _initDone.complete();
     notifyListeners();
   }
 

@@ -40,5 +40,48 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && (request.auth.uid == uid || isAdmin());
     }
+
+    // ---------- Espace développeur ----------
+
+    // La fiche d'un développeur : lui-même ou l'administrateur.
+    match /developers/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      // S'inscrire (ou se réinscrire après un refus) : toujours « en attente ».
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly(['fullName', 'phone', 'email', 'status', 'createdAt'])
+        && request.resource.data.fullName is string && request.resource.data.fullName.size() <= 100
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 30;
+      allow update: if isAdmin()
+        || (request.auth != null && request.auth.uid == uid
+            && resource.data.status == 'rejected'
+            && request.resource.data.status == 'pending');
+    }
+
+    // La photo de la pièce d'identité : rangée à part, jamais publique.
+    match /developer_ids/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.image is string
+        && request.resource.data.image.size() < 900000;
+      allow delete: if isAdmin();
+    }
+
+    // Les applis proposées : seul un développeur validé peut en proposer.
+    match /submissions/{id} {
+      allow read: if request.auth != null
+        && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.status == 'approved';
+      allow update, delete: if isAdmin();
+    }
+
+    // Les applis publiées : tout le monde les lit, seul l'administrateur les écrit.
+    match /apps/{appId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

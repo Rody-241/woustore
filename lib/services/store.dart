@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../models/app_entry.dart';
+import 'account.dart';
+import 'developer.dart';
 
 enum Phase { idle, downloading, installing, installed, error }
 
@@ -241,6 +243,19 @@ class Store extends ChangeNotifier {
     } catch (_) {
       loadError = 'Le catalogue est illisible.';
     }
+    // Les applis publiées par les développeurs (validées dans Firestore).
+    try {
+      await Account.i.initDone.timeout(const Duration(seconds: 10));
+      if (Account.i.ready) {
+        final extra = await DevSpace.publishedApps().timeout(const Duration(seconds: 15));
+        for (final m in extra) {
+          if (apps.any((a) => a.id == m['id'])) continue;
+          try {
+            apps.add(AppEntry.fromJson(m));
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
     loading = false;
     notifyListeners();
     await refreshInstalled();

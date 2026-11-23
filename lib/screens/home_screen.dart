@@ -7,7 +7,9 @@ import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/install_button.dart';
 import 'app_screen.dart';
+import 'admin_screen.dart';
 import 'categories_screen.dart';
+import 'developer_screen.dart';
 import 'install_file_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -303,6 +305,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(height: 24),
         ],
         const _AccountCard(),
+        const SizedBox(height: 12),
+        _MenuTile(
+          icon: Icons.code_rounded,
+          title: 'Espace développeur',
+          subtitle: 'Publie tes propres applis sur WouStore',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const DeveloperScreen()),
+          ),
+        ),
+        const _AdminTile(),
         const SizedBox(height: 24),
         Text('Mes applis', style: W.title(20)),
         const SizedBox(height: 8),
@@ -783,6 +795,80 @@ class _AccountCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+
+class _MenuTile extends StatelessWidget {
+  const _MenuTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Material(
+        color: W.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: W.border),
+        ),
+        child: InkWell(
+          customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Icon(icon, color: W.accent),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: W.body(15, weight: FontWeight.w700)),
+                      Text(subtitle, style: W.body(12, color: W.muted)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: W.muted),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Visible seulement pour l'administrateur.
+class _AdminTile extends StatelessWidget {
+  const _AdminTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Account.i,
+      builder: (context, _) => Account.i.user == null
+          ? const SizedBox.shrink()
+          : FutureBuilder<bool>(
+              future: Reviews.isAdmin(),
+              builder: (context, snap) => snap.data == true
+                  ? _MenuTile(
+                      icon: Icons.admin_panel_settings_outlined,
+                      title: 'Administration',
+                      subtitle: 'Valider les développeurs et les applis',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AdminScreen()),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
     );
   }
 }
