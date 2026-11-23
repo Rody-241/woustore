@@ -16,5 +16,22 @@
   "minSdk": 23,
   "versionName": "0.29.3",
   "versionCode": 1017,
+  "release": {
+    "tag": "v0.29.3",
+    "publishedAt": "2026-11-10T09:52:10Z",
+    "notes": "This is a hotfix update which resolves recent problems with Bandcamp and SoundCloud.\r\n\r\n[SoundCloud] Fixed not being able to extract streams by adding support for aac_96k audio streams\r\n[Bandcamp] Bypass client verification\r\n[Bandcamp] Fixed search when using a non-English content language\r\n",
+    "assets": [
+      {
+        "name": "NewPipe_v0.29.3.apk",
+        "url": "https://github.com/TeamNewPipe/NewPipe/releases/download/v0.29.3/NewPipe_v0.29.3.apk",
+        "size": 16980865
+      },
+      {
+        "name": "NewPipe_v0.29.3_apksigner31.apk",
+        "url": "https://github.com/TeamNewPipe/NewPipe/releases/download/v0.29.3/NewPipe_v0.29.3_apksigner31.apk",
+        "size": 16980865
+      }
+    ]
+  },
   "cert": "cb84069bd68116bafae5ee4ee5b08a567aa6d898404e7cb12f9e756df5cf5cab"
 }

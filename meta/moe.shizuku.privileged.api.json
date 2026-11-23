@@ -10,5 +10,17 @@
   "minSdk": 24,
   "versionName": "13.6.0.r1086.2650830c",
   "versionCode": 1086,
+  "release": {
+    "tag": "v13.6.0",
+    "publishedAt": "2025-05-25T13:19:47Z",
+    "notes": "## What's Changed\r\n- Support Android16 QPR1\r\n- Support auto start without root on Android13+ when connected to a trusted WiFi\r\n- Update the start command\r\n```sh\r\npm_path=$(pm path moe.shizuku.privileged.api) && apk_path=${pm_path#package:} && $(dirname $apk_path)/lib/*/libshizuku.so\r\n```\r\nYou can copy `libshizuku.so` file to any executable location, such as /data/local/tmp/shizuku\r\n\r\n**Full Changelog**: https://github.com/RikkaApps/Shizuku/compare/v13.5.4...v13.6.0",
+    "assets": [
+      {
+        "name": "shizuku-v13.6.0.r1086.2650830c-release.apk",
+        "url": "https://github.com/RikkaApps/Shizuku/releases/download/v13.6.0/shizuku-v13.6.0.r1086.2650830c-release.apk",
+        "size": 2571773
+      }
+    ]
+  },
   "cert": "268b5590e868fb08bae7e0ac413564cd1ff88f5ccff74af9dbd0dc918e30db30"
 }
