@@ -626,8 +626,12 @@ class _SelfUpdateBanner extends StatelessWidget {
                 Text('Nouvelle version de WouStore', style: W.body(15, weight: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Text(
-                  s.busy ? 'WouStore va redémarrer tout seul.' : 'Mets à jour en un toucher.',
-                  style: W.body(13, color: W.soft),
+                  s.phase == Phase.error && s.error != null
+                      ? s.error!
+                      : s.busy
+                          ? 'WouStore va redémarrer tout seul.'
+                          : 'Mets à jour en un toucher.',
+                  style: W.body(13, color: s.phase == Phase.error ? W.orange : W.soft),
                 ),
               ],
             ),

@@ -208,6 +208,17 @@ def main():
             apk = f"/tmp/{app['id']}.apk"
             download(asset["browser_download_url"], apk)
             info = apk_info(apk, aapt)
+            # Tout ce dont WouStore a besoin pour télécharger, sans interroger l'API de GitHub
+            # (limitée à 60 questions par heure et par adresse internet).
+            info["release"] = {
+                "tag": rel.get("tag_name"),
+                "publishedAt": rel.get("published_at"),
+                "notes": (rel.get("body") or "")[:4000],
+                "assets": [
+                    {"name": a["name"], "url": a["browser_download_url"], "size": a["size"]}
+                    for a in rel.get("assets", [])
+                ],
+            }
             info["cert"] = apk_cert(apk, aapt)
             data = None if keep else icon_from_apk(apk, aapt)
             os.remove(apk)

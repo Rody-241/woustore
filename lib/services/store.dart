@@ -244,8 +244,41 @@ class Store extends ChangeNotifier {
     loading = false;
     notifyListeners();
     await refreshInstalled();
-    await Future.wait([...apps.map(_resolve), ...apps.map(_loadMeta)]);
+    // D'abord les infos préparées par le robot (pas de limite),
+    // puis l'API de GitHub seulement pour ce qui manque.
+    await Future.wait(apps.map(_loadMeta));
+    await Future.wait(apps.where((a) => a.downloadUrl == null).map(_resolve));
     notifyListeners();
+  }
+
+  /// Choisit le bon fichier (et la vidéo) dans une version publiée.
+  bool _applyRelease(AppEntry a, Map<String, dynamic> rel) {
+    final assets = ((rel['assets'] ?? const []) as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    final re = RegExp(_patternFor(a));
+    final videoRe = RegExp(r'\.(mp4|webm|mkv|3gp)$', caseSensitive: false);
+    for (final asset in assets) {
+      final name = (asset['name'] ?? '') as String;
+      final url = (asset['url'] ?? asset['browser_download_url']) as String?;
+      if (a.videoUrl == null && videoRe.hasMatch(name)) {
+        a.videoUrl = url;
+        a.videoSize = (asset['size'] as num?)?.toInt();
+      }
+    }
+    for (final asset in assets) {
+      final name = (asset['name'] ?? '') as String;
+      if (re.hasMatch(name)) {
+        a.downloadUrl = (asset['url'] ?? asset['browser_download_url']) as String?;
+        a.size = (asset['size'] as num?)?.toInt();
+        a.latestVersion = (rel['tag'] ?? rel['tag_name']) as String?;
+        a.releaseNotes = ((rel['notes'] ?? rel['body']) as String?)?.trim();
+        a.updatedAt = DateTime.tryParse(((rel['publishedAt'] ?? rel['published_at']) ?? '') as String);
+        a.resolveError = null;
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _loadMeta(AppEntry a) async {
@@ -255,39 +288,23 @@ class Store extends ChangeNotifier {
       a.permissions = ((j['permissions'] ?? const []) as List).cast<String>();
       a.minSdk = (j['minSdk'] as num?)?.toInt();
       a.versionCode = (j['versionCode'] as num?)?.toInt();
+      final rel = j['release'] as Map?;
+      if (rel != null) _applyRelease(a, Map<String, dynamic>.from(rel));
       a.cert = j['cert'] as String?;
     } catch (_) {}
   }
 
-  /// Cherche le fichier .apk de la dernière version publiée sur GitHub.
+  /// Secours : demander directement à l'API de GitHub (limitée à 60 questions par heure).
   Future<void> _resolve(AppEntry a) async {
     try {
       final txt = await _getText(Uri.parse(
           'https://api.github.com/repos/${a.github}/releases/latest'));
       final j = jsonDecode(txt) as Map<String, dynamic>;
-      final re = RegExp(_patternFor(a));
-      final videoRe = RegExp(r'\.(mp4|webm|mkv|3gp)$', caseSensitive: false);
-      for (final item in (j['assets'] as List)) {
-        final asset = Map<String, dynamic>.from(item as Map);
-        if (a.videoUrl == null && videoRe.hasMatch(asset['name'] as String)) {
-          a.videoUrl = asset['browser_download_url'] as String;
-          a.videoSize = (asset['size'] as num).toInt();
-        }
-      }
-      for (final item in (j['assets'] as List)) {
-        final asset = Map<String, dynamic>.from(item as Map);
-        final name = asset['name'] as String;
-        if (re.hasMatch(name)) {
-          a.downloadUrl = asset['browser_download_url'] as String;
-          a.size = (asset['size'] as num).toInt();
-          a.latestVersion = j['tag_name'] as String?;
-          a.releaseNotes = (j['body'] as String?)?.trim();
-          a.updatedAt = DateTime.tryParse((j['published_at'] ?? '') as String);
-          a.resolveError = null;
-          return;
-        }
-      }
-      a.resolveError = "Aucun fichier d'installation trouvé.";
+      if (!_applyRelease(a, j)) a.resolveError = "Aucun fichier d'installation trouvé.";
+    } on HttpException catch (e) {
+      a.resolveError = e.message.contains('403') || e.message.contains('429')
+          ? 'GitHub est saturé pour ta connexion. Réessaie dans un moment.'
+          : 'Pas de connexion.';
     } catch (_) {
       a.resolveError = 'Pas de connexion.';
     }
@@ -390,6 +407,9 @@ class Store extends ChangeNotifier {
       ..error = null;
     notifyListeners();
 
+    if (a.downloadUrl == null) {
+      await _loadMeta(a);
+    }
     if (a.downloadUrl == null) {
       await _resolve(a);
       if (a.downloadUrl == null) {
