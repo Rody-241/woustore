@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "709382251864",
+    "project_id": "woustore-c9e0b",
+    "storage_bucket": "woustore-c9e0b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709382251864:android:9d2f16d1bfcecd7581b12d",
+        "android_client_info": {
+          "package_name": "com.woustore.woustore"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "709382251864-r6tj5ri2m269d44ubdonockg91o0vt6f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.woustore.woustore",
+            "certificate_hash": "df9b5bcd302e99ee1d51293ba0aabebde27b43bb"
+          }
+        },
+        {
+          "client_id": "709382251864-e6ilrht8qjmic7pjoj36sshq6tf3k5t3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbEay6vUZU9nCraZ3pZCmKpbMsweJ4aOM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "709382251864-e6ilrht8qjmic7pjoj36sshq6tf3k5t3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Règles de sécurité de la base WouStore.
+// Par défaut, tout est fermé : on n'ouvre que ce qui est nécessaire.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Les administrateurs de WouStore (toi) : un document par identifiant.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      // Chacun peut seulement vérifier s'il est lui-même administrateur.
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // ajouté à la main dans la console
+    }
+
+    // Les avis : reviews/{appli}/items/{utilisateur}
+    match /reviews/{appId}/items/{uid} {
+      // Tout le monde peut lire les avis, même sans compte.
+      allow read: if true;
+
+      // On ne peut écrire QUE son propre avis, avec une note de 1 à 5
+      // et un commentaire de 500 caractères au plus.
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'rating', 'text', 'version', 'updatedAt', 'createdAt'])
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.updatedAt == request.time;
+
+      // Supprimer : l'auteur de l'avis, ou un administrateur.
+      allow delete: if request.auth != null
+        && (request.auth.uid == uid || isAdmin());
+    }
+  }
+}

@@ -6,6 +6,7 @@ import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/install_button.dart';
+import '../widgets/reviews_section.dart';
 import '../widgets/video_preview.dart';
 
 /// Fiche d'une appli, avec la progression de l'installation.
@@ -110,6 +111,8 @@ class AppScreen extends StatelessWidget {
                   child: _Expandable(text: cleanNotes(app.releaseNotes!)),
                 ),
               ],
+              const SizedBox(height: 28),
+              ReviewsSection(app: app),
               const SizedBox(height: 28),
               _Section(title: 'Informations', child: _Infos(app: app)),
             ],

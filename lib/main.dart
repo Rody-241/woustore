@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'screens/home_screen.dart';
+import 'services/account.dart';
 import 'theme.dart';
 
 void main() {
@@ -12,6 +13,7 @@ void main() {
     systemNavigationBarColor: Color(0xFF0D1015),
     systemNavigationBarIconBrightness: Brightness.light,
   ));
+  Account.i.init(); // Firebase : comptes et avis
   runApp(const WouStoreApp());
 }
 

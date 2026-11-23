@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/app_entry.dart';
+import '../services/account.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
@@ -301,6 +302,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             AppRow(app: ups[i], last: i == ups.length - 1, onTap: () => _openApp(ups[i])),
           const SizedBox(height: 24),
         ],
+        const _AccountCard(),
+        const SizedBox(height: 24),
         Text('Mes applis', style: W.title(20)),
         const SizedBox(height: 8),
         if (mine.isEmpty)
@@ -709,6 +712,73 @@ class CategoryChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+/// Le compte Google de l'utilisateur, en haut de « Mes applis ».
+class _AccountCard extends StatelessWidget {
+  const _AccountCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Account.i,
+      builder: (context, _) {
+        final a = Account.i;
+        final u = a.user;
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: W.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: W.border),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: W.surface2,
+                backgroundImage: u?.photoURL == null ? null : NetworkImage(u!.photoURL!),
+                child: u?.photoURL == null
+                    ? const Icon(Icons.person_outline_rounded, color: W.muted)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(u == null ? 'Pas connecté' : a.name,
+                        style: W.body(15, weight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(
+                      u == null
+                          ? (a.error ?? 'Connecte-toi pour noter les applis.')
+                          : (u.email ?? ''),
+                      style: W.body(12, color: a.error != null && u == null ? W.red : W.muted),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (u == null)
+                TextButton(
+                  onPressed: a.ready && !a.busy ? a.signIn : null,
+                  child: Text('Se connecter',
+                      style: W.body(14, color: W.accent, weight: FontWeight.w700)),
+                )
+              else
+                TextButton(
+                  onPressed: a.signOut,
+                  child: Text('Déconnexion', style: W.body(13, color: W.soft)),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
