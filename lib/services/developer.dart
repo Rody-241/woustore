@@ -144,47 +144,4 @@ class DevSpace {
     final q = await _db.collection('apps').get();
     return q.docs.map((d) => {...d.data(), 'id': d.id}).toList();
   }
-
-  // ---------- Administration ----------
-
-  static Future<List<Developer>> developers(Review3 status) async {
-    final q = await _db.collection('developers').where('status', isEqualTo: status.name).get();
-    return q.docs.map(Developer.fromDoc).toList();
-  }
-
-  static Future<Uint8List?> idPhoto(String uid) async {
-    final d = await _db.collection('developer_ids').doc(uid).get();
-    final b64 = d.data()?['image'] as String?;
-    return b64 == null ? null : base64Decode(b64);
-  }
-
-  static Future<void> decideDeveloper(String uid, bool approve, {String? reason}) =>
-      _db.collection('developers').doc(uid).update({
-        'status': approve ? 'approved' : 'rejected',
-        'reason': approve ? null : (reason ?? ''),
-        'decidedAt': FieldValue.serverTimestamp(),
-      });
-
-  static Future<List<Submission>> submissions(Review3 status) async {
-    final q = await _db.collection('submissions').where('status', isEqualTo: status.name).get();
-    return q.docs.map(Submission.fromDoc).toList();
-  }
-
-  /// Valider : l'appli entre dans le catalogue (collection « apps », lue par WouStore et par le robot).
-  static Future<void> decideSubmission(Submission s, bool approve, {String? reason}) async {
-    final batch = _db.batch();
-    batch.update(_db.collection('submissions').doc(s.id), {
-      'status': approve ? 'approved' : 'rejected',
-      'reason': approve ? null : (reason ?? ''),
-      'decidedAt': FieldValue.serverTimestamp(),
-    });
-    if (approve) {
-      batch.set(_db.collection('apps').doc(s.package), {
-        ...s.data,
-        'owner': s.uid,
-        'publishedAt': FieldValue.serverTimestamp(),
-      });
-    }
-    await batch.commit();
-  }
 }

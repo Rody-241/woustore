@@ -7,7 +7,6 @@ import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/install_button.dart';
 import 'app_screen.dart';
-import 'admin_screen.dart';
 import 'categories_screen.dart';
 import 'developer_screen.dart';
 import 'install_file_screen.dart';
@@ -314,7 +313,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             MaterialPageRoute(builder: (_) => const DeveloperScreen()),
           ),
         ),
-        const _AdminTile(),
         const SizedBox(height: 24),
         Text('Mes applis', style: W.title(20)),
         const SizedBox(height: 8),
@@ -842,33 +840,6 @@ class _MenuTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Visible seulement pour l'administrateur.
-class _AdminTile extends StatelessWidget {
-  const _AdminTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Account.i,
-      builder: (context, _) => Account.i.user == null
-          ? const SizedBox.shrink()
-          : FutureBuilder<bool>(
-              future: Reviews.isAdmin(),
-              builder: (context, snap) => snap.data == true
-                  ? _MenuTile(
-                      icon: Icons.admin_panel_settings_outlined,
-                      title: 'Administration',
-                      subtitle: 'Valider les développeurs et les applis',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AdminScreen()),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
     );
   }
 }

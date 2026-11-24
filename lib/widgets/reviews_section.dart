@@ -19,7 +19,6 @@ class _ReviewsSectionState extends State<ReviewsSection> {
   RatingSummary? _summary;
   List<Review> _reviews = const [];
   Review? _mine;
-  bool _admin = false;
   bool _loading = true;
   String? _error;
 
@@ -47,14 +46,12 @@ class _ReviewsSectionState extends State<ReviewsSection> {
         Reviews.summary(id),
         Reviews.latest(id),
         Reviews.mine(id),
-        Reviews.isAdmin(),
       ]);
       if (!mounted) return;
       setState(() {
         _summary = results[0] as RatingSummary;
         _reviews = results[1] as List<Review>;
         _mine = results[2] as Review?;
-        _admin = results[3] as bool;
         _loading = false;
         _error = null;
       });
@@ -133,7 +130,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                 _ReviewTile(
                   review: r,
                   mine: r.uid == Account.i.user?.uid,
-                  canDelete: _admin || r.uid == Account.i.user?.uid,
+                  canDelete: r.uid == Account.i.user?.uid,
                   onDelete: () => _delete(r),
                 ),
             ],

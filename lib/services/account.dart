@@ -177,16 +177,4 @@ class Reviews {
   }
 
   static Future<void> delete(String appId, String uid) => _items(appId).doc(uid).delete();
-
-  /// Toi, l'administrateur : peut supprimer n'importe quel avis.
-  static Future<bool> isAdmin() async {
-    final u = Account.i.user;
-    if (u == null) return false;
-    try {
-      final d = await FirebaseFirestore.instance.collection('admins').doc(u.uid).get();
-      return d.exists;
-    } catch (_) {
-      return false;
-    }
-  }
 }
