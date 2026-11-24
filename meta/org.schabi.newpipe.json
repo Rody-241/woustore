@@ -33,5 +33,9 @@
       }
     ]
   },
-  "cert": "cb84069bd68116bafae5ee4ee5b08a567aa6d898404e7cb12f9e756df5cf5cab"
+  "cert": "cb84069bd68116bafae5ee4ee5b08a567aa6d898404e7cb12f9e756df5cf5cab",
+  "scan": {
+    "sha256": "0ab2b9b5103bd3173cb4540f9a2fe660d93a44ac17254e7d13b26d1d8f012192",
+    "status": "disabled"
+  }
 }
