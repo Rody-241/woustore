@@ -98,6 +98,7 @@ class Review {
     required this.text,
     required this.updatedAt,
     this.version,
+    this.reply,
   });
 
   final String uid;
@@ -106,6 +107,9 @@ class Review {
   final String text;
   final DateTime? updatedAt;
   final String? version;
+
+  /// Réponse publique du développeur.
+  final String? reply;
 
   factory Review.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data() ?? const {};
@@ -116,6 +120,7 @@ class Review {
       text: (m['text'] as String?) ?? '',
       updatedAt: (m['updatedAt'] as Timestamp?)?.toDate(),
       version: m['version'] as String?,
+      reply: m['reply'] as String?,
     );
   }
 }

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../models/app_entry.dart';
 import '../services/account.dart';
+import '../services/developer.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/install_button.dart';
 import 'app_screen.dart';
 import 'categories_screen.dart';
-import 'developer_screen.dart';
 import 'install_file_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -308,10 +308,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _MenuTile(
           icon: Icons.code_rounded,
           title: 'Espace développeur',
-          subtitle: 'Publie tes propres applis sur WouStore',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const DeveloperScreen()),
-          ),
+          subtitle: 'Publie tes applis : ouvre le site développeur',
+          onTap: () => Store.i.openUrl(DevSpace.siteUrl),
         ),
         const SizedBox(height: 24),
         Text('Mes applis', style: W.title(20)),

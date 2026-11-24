@@ -17,6 +17,10 @@ class AppEntry {
     required this.openSource,
     this.hidden = false,
     this.assetsByAbi = const {},
+    this.ageRating,
+    this.dataCollected = const [],
+    this.dataShared = false,
+    this.privacyUrl,
     required this.description,
     required this.screenshots,
     required this.iconUrl,
@@ -47,6 +51,15 @@ class AppEntry {
 
   /// Fichier à prendre selon le type de téléphone, ex. {"armeabi-v7a": "-32bit\\.apk$"}.
   final Map<String, String> assetsByAbi;
+
+  /// Classification par âge (all, 12, 16, 18) et données collectées, déclarées par le développeur.
+  final String? ageRating;
+  final List<String> dataCollected;
+  final bool dataShared;
+  final String? privacyUrl;
+
+  /// Retirée du magasin (signalements, ou version dangereuse sans version saine).
+  bool blocked = false;
 
   /// Fiche cachée de la liste (WouStore lui-même, pour ses mises à jour).
   final bool hidden;
@@ -102,6 +115,10 @@ class AppEntry {
       openSource: (j['openSource'] ?? false) as bool,
       hidden: (j['hidden'] ?? false) as bool,
       assetsByAbi: Map<String, String>.from((j['assetsByAbi'] ?? const {}) as Map),
+      ageRating: j['ageRating'] as String?,
+      dataCollected: ((j['dataCollected'] ?? const []) as List).cast<String>(),
+      dataShared: (j['dataShared'] ?? false) as bool,
+      privacyUrl: j['privacyUrl'] as String?,
       description: (j['description'] ?? '') as String,
       screenshots: ((j['screenshots'] ?? const []) as List).cast<String>(),
       iconUrl: (j['iconUrl'] as String?) ?? '$iconBase/${j['id']}.png',

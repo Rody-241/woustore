@@ -708,6 +708,15 @@ class MainActivity : FlutterActivity() {
                     result.success(launch != null)
                 }
                 "icon" -> result.success(iconOf(pkgArg))
+                "openUrl" -> {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(call.argument<String>("url") ?: ""))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        result.success(true)
+                    } catch (e: Throwable) {
+                        result.success(false)
+                    }
+                }
                 "askNotifications" -> {
                     if (Build.VERSION.SDK_INT >= 33 &&
                         checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED

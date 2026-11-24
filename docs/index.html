@@ -42,6 +42,10 @@
   .center h2 { color: var(--text); font-size: 24px; margin-bottom: 8px; }
   .stars { color: var(--accent); letter-spacing: 1px; }
   .review { border-top: 1px solid var(--line); padding-top: 10px; }
+  .gate { list-style: none; padding: 0; margin: 0; }
+  .gate li { display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .green { background: var(--accent); } .orange { background: var(--orange); } .red { background: var(--red); } .wait { background: var(--muted); }
   .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border); padding: 12px 18px; border-radius: 12px; display: none; max-width: 90vw; }
   dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 18px; max-width: 94vw; padding: 16px; }
   dialog::backdrop { background: rgba(0,0,0,.7); }
@@ -173,13 +177,15 @@ onAuthStateChanged(auth, async (user) => {
 // ---------- Écran principal ----------
 
 async function render() {
-  const [devs, subs] = await Promise.all([
+  const [devs, subs, mods] = await Promise.all([
     getDocs(query(collection(db, 'developers'), where('status', '==', 'pending'))),
-    getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending'))),
+    getDocs(query(collection(db, 'submissions'), where('status', '==', 'review'))),
+    getDocs(query(collection(db, 'moderation'), where('blocked', '==', true))),
   ]);
   const tabs = [
     ['devs', 'Développeurs', devs.size],
-    ['subs', 'Applis à valider', subs.size],
+    ['subs', 'À vérifier', subs.size],
+    ['reports', 'Signalements', mods.size],
     ['apps', 'Applis publiées', 0],
     ['reviews', 'Avis', 0],
   ];
@@ -192,6 +198,7 @@ async function render() {
     if (tab === 'devs') await renderDevs(panel, devs);
     if (tab === 'subs') await renderSubs(panel, subs);
     if (tab === 'apps') await renderApps(panel);
+    if (tab === 'reports') await renderReports(panel, mods);
     if (tab === 'reviews') await renderReviews(panel);
   } catch (e) {
     panel.innerHTML = `<div class="empty">Erreur : ${esc(e.message)}</div>`;
@@ -233,7 +240,10 @@ async function renderDevs(panel, snap) {
 }
 
 async function renderSubs(panel, snap) {
-  if (snap.empty) { panel.innerHTML = '<div class="empty">Aucune appli en attente.</div>'; return; }
+  if (snap.empty) {
+    panel.innerHTML = '<div class="empty">Rien à vérifier. Les applis dont tous les contrôles sont verts sont publiées automatiquement par le portique.</div>';
+    return;
+  }
   panel.innerHTML = '<div class="grid" id="list"></div>';
   for (const d of snap.docs) {
     const v = d.data(); const a = v.app || {};
@@ -244,11 +254,10 @@ async function renderSubs(panel, snap) {
       <div><b>${esc(a.tagline)}</b></div>
       <div class="soft">${esc(a.description)}</div>
       <div><a href="https://github.com/${esc(a.github)}/releases" target="_blank" rel="noopener">Voir les versions sur GitHub ↗</a></div>
-      <div data-scan class="muted">Analyse…</div>
-      <div class="muted">Avant de valider : vérifie le résultat de l'analyse, et essaie l'appli en cas de doute.</div>
+      <ul class="gate">${(v.checks || []).map((c) => `<li><span class="dot ${c.level}"></span><span><b>${esc(c.label)}</b> — ${esc(c.message)}</span></li>`).join('')}</ul>
+      <div class="muted">Le portique a mis cette appli de côté à cause des points orange. Vérifie-les avant de décider.</div>
       <div class="row"><button class="danger" data-no>Refuser</button><button class="primary" data-yes>Valider et publier</button></div>`;
     $('list').appendChild(card);
-    scanHtml(d.id).then((h) => (card.querySelector('[data-scan]').outerHTML = h));
     card.querySelector('[data-yes]').onclick = async () => {
       const batch = writeBatch(db);
       batch.delete(doc(db, 'submission_queue', d.id));
@@ -261,9 +270,34 @@ async function renderSubs(panel, snap) {
       const reason = await askReason(); if (reason === null) return;
       const batch = writeBatch(db);
       batch.update(doc(db, 'submissions', d.id), { status: 'rejected', reason, decidedAt: serverTimestamp() });
-      batch.delete(doc(db, 'submission_queue', d.id));
       await batch.commit();
       toast('Appli refusée.'); render();
+    };
+  }
+}
+
+async function renderReports(panel, mods) {
+  if (mods.empty) { panel.innerHTML = '<div class="empty">Aucune appli retirée après signalements.</div>'; return; }
+  panel.innerHTML = '<div class="grid" id="list"></div>';
+  for (const m of mods.docs) {
+    const v = m.data();
+    const reasons = Object.entries(v.reasons || {}).map(([r, n]) => `${esc(r)} (${n})`).join(', ');
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<h3>${esc(m.id)}</h3><div style="color:var(--red)">${esc(v.reason)}</div>
+      <div class="muted">Motifs : ${reasons || '—'}</div>
+      <div class="muted">L'appli est masquée dans WouStore. Vérifie-la : si les signalements sont injustes, rétablis-la.</div>
+      <div class="row"><button class="danger" data-del>Retirer définitivement</button><button class="primary" data-ok>Rétablir</button></div>`;
+    $('list').appendChild(card);
+    card.querySelector('[data-ok]').onclick = async () => {
+      await setDoc(doc(db, 'moderation', m.id), { blocked: false, cleared: true, at: serverTimestamp() });
+      toast('Appli rétablie.'); render();
+    };
+    card.querySelector('[data-del]').onclick = async () => {
+      if (!confirm('Retirer définitivement cette appli ?')) return;
+      await setDoc(doc(db, 'moderation', m.id), { blocked: true, cleared: true, reason: 'Retirée par WouStore', at: serverTimestamp() });
+      try { await deleteDoc(doc(db, 'apps', m.id)); } catch (_) {}
+      toast('Appli retirée.'); render();
     };
   }
 }

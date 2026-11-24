@@ -318,6 +318,23 @@ class _ReviewTile extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(r.text, style: W.body(14, color: W.soft).copyWith(height: 1.45)),
+          if ((r.reply ?? '').isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              decoration: const BoxDecoration(
+                color: W.surface,
+                border: Border(left: BorderSide(color: W.accent, width: 3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Réponse du développeur', style: W.body(12, color: W.accent, weight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(r.reply!, style: W.body(14, color: W.soft).copyWith(height: 1.45)),
+                ],
+              ),
+            ),
         ],
       ),
     );

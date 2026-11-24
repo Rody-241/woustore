@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WouStore · Espace développeur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+  :root {
+    --bg: #0A0C10; --surface: #14181F; --surface2: #1A1F29; --line: #1C222B; --border: #262D38;
+    --text: #F2F4F7; --soft: #C9D1DC; --muted: #9AA4B2; --accent: #3DDC97; --on-accent: #062016;
+    --red: #FF6B6B; --orange: #FFB454;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 Inter, system-ui, sans-serif; }
+  h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.3px; margin: 0; }
+  h2 { font-size: 22px; margin: 28px 0 12px; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 20px 16px 80px; }
+  header { display: flex; align-items: center; gap: 12px; padding: 8px 0 16px; flex-wrap: wrap; }
+  .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
+  header h1 { font-size: 21px; flex: 1; min-width: 180px; }
+  header h1 small { display: block; font: 500 13px Inter, sans-serif; color: var(--muted); letter-spacing: 0; }
+  button { font: 600 15px Inter, sans-serif; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); padding: 0 18px; min-height: 46px; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+  button:disabled { opacity: .5; cursor: default; }
+  .tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 8px; }
+  .tab { white-space: nowrap; border-radius: 999px; background: var(--surface); }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+  .card h3 { font-size: 18px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .soft { color: var(--soft); }
+  label { display: block; font-weight: 600; margin: 16px 0 6px; }
+  label .muted { font-weight: 400; display: block; }
+  input[type=text], input[type=tel], input[type=url], textarea, select {
+    width: 100%; background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; font: inherit; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  textarea { min-height: 110px; resize: vertical; }
+  .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 6px 14px; }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-weight: 500; margin: 0; }
+  .check input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent); }
+  .status { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 13px; font-weight: 700; }
+  .s-pending { background: #2a2414; color: var(--orange); }
+  .s-review { background: #2a2414; color: var(--orange); }
+  .s-approved { background: #0F2A1F; color: var(--accent); }
+  .s-rejected { background: #2c1616; color: var(--red); }
+  .gate { list-style: none; padding: 0; margin: 10px 0 0; }
+  .gate li { display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .green { background: var(--accent); } .orange { background: var(--orange); } .red { background: var(--red); } .wait { background: var(--muted); }
+  .note { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; font-size: 14px; color: var(--soft); }
+  .note ol { margin: 6px 0 0; padding-left: 20px; }
+  .error { color: var(--red); margin-top: 10px; }
+  .center { text-align: center; padding: 50px 16px; color: var(--soft); }
+  .center h2 { color: var(--text); margin-top: 0; }
+  .stars { color: var(--accent); letter-spacing: 1px; }
+  .review { border-top: 1px solid var(--line); padding: 12px 0; }
+  .reply { margin-top: 8px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface2); border-radius: 0 10px 10px 0; font-size: 14px; }
+  .stat { display: inline-block; margin-right: 18px; }
+  .stat b { font: 700 24px 'Space Grotesk', sans-serif; display: block; }
+  img.preview { max-width: 100%; max-height: 220px; border-radius: 12px; margin-top: 10px; display: block; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#062016" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l3.5 12L12 9l5.5 9L21 6"/></svg>
+    </div>
+    <h1>WouStore · Espace développeur <small id="who">Chargement…</small></h1>
+    <button id="signout" hidden>Déconnexion</button>
+  </header>
+  <main id="app"><div class="center">Chargement…</div></main>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, query, where, orderBy, limit,
+  getAggregateFromServer, average, count, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+
+const fb = initializeApp({
+  apiKey: 'AIzaSyBbEay6vUZU9nCraZ3pZCmKpbMsweJ4aOM',
+  authDomain: 'woustore-c9e0b.firebaseapp.com',
+  projectId: 'woustore-c9e0b',
+  storageBucket: 'woustore-c9e0b.firebasestorage.app',
+  messagingSenderId: '709382251864',
+});
+const auth = getAuth(fb);
+const db = getFirestore(fb);
+const CATALOG = 'https://raw.githubusercontent.com/Rody-241/woustore/main/catalog.json';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const app = $('app');
+let user = null;
+let tab = 'dashboard';
+
+getRedirectResult(auth).catch(() => {});
+$('signout').onclick = () => signOut(auth);
+
+function signInScreen(message = '') {
+  app.innerHTML = `<div class="center"><h2>Publie tes applis sur WouStore</h2>
+    <p>Le magasin d'applis fait au Gabon. Connecte-toi avec ton compte Google pour commencer.</p>
+    ${message ? `<p class="error">${esc(message)}</p>` : ''}
+    <p><button class="primary" id="signin">Se connecter avec Google</button></p></div>`;
+  $('signin').onclick = async () => {
+    const provider = new GoogleAuthProvider();
+    try { await signInWithPopup(auth, provider); }
+    catch (e) {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await signInWithRedirect(auth, provider);
+      else if (e.code !== 'auth/popup-closed-by-user') signInScreen('Connexion impossible : ' + e.code);
+    }
+  };
+}
+
+onAuthStateChanged(auth, async (u) => {
+  user = u;
+  $('signout').hidden = !u;
+  $('who').textContent = u ? u.email : 'Non connecté';
+  if (!u) return signInScreen();
+  route();
+});
+
+async function route() {
+  app.innerHTML = '<div class="center">Chargement…</div>';
+  const snap = await getDoc(doc(db, 'developers', user.uid));
+  if (!snap.exists()) return registerScreen();
+  const dev = snap.data();
+  if (dev.status === 'pending') {
+    app.innerHTML = `<div class="center"><h2>Merci ${esc(dev.fullName.split(' ')[0])} !</h2>
+      <p>Ton inscription est en cours de vérification. Tu pourras publier tes applis dès qu'elle sera validée.</p></div>`;
+    return;
+  }
+  if (dev.status === 'rejected') return registerScreen(dev);
+  approvedScreen(dev);
+}
+
+// ---------- Inscription (avec la pièce d'identité) ----------
+
+function registerScreen(previous) {
+  app.innerHTML = `
+    ${previous ? `<div class="card" style="border-color:var(--red)"><b>Ton inscription a été refusée.</b>
+      <div class="soft">${esc(previous.reason || '')}</div><div class="muted">Corrige et renvoie ta demande.</div></div>` : ''}
+    <div class="card">
+      <h2 style="margin-top:0">Deviens développeur WouStore</h2>
+      <p class="soft">On te demande ton nom, ton téléphone et une pièce d'identité : c'est ce qui protège les utilisateurs contre les applis malveillantes. Seul l'administrateur de WouStore peut voir ta pièce.</p>
+      <div class="note">🎉 Pendant le lancement, l'inscription est <b>gratuite</b>.</div>
+      <label for="fullName">Nom complet <span class="muted">Comme sur ta pièce d'identité</span></label>
+      <input type="text" id="fullName" maxlength="100" value="${esc(previous?.fullName || user.displayName || '')}">
+      <label for="phone">Téléphone</label>
+      <input type="tel" id="phone" maxlength="30" placeholder="077 12 34 56" value="${esc(previous?.phone || '')}">
+      <label for="idFile">Photo de ta pièce d'identité <span class="muted">Carte d'identité, passeport ou permis, bien lisible</span></label>
+      <input type="file" id="idFile" accept="image/*">
+      <img id="idPreview" class="preview" alt="" hidden>
+      <label class="check" style="margin-top:18px"><input type="checkbox" id="accept">
+        <span>Je m'engage à ne publier que mes propres applis, sans virus ni arnaque. Une appli dangereuse entraîne la fermeture de mon compte.</span></label>
+      <div class="error" id="err"></div>
+      <p><button class="primary" id="send">Envoyer ma demande</button></p>
+    </div>`;
+  let photo = null;
+  $('idFile').onchange = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    photo = await compress(file);
+    $('idPreview').src = 'data:image/jpeg;base64,' + photo; $('idPreview').hidden = false;
+  };
+  $('send').onclick = async () => {
+    const fullName = $('fullName').value.trim(), phone = $('phone').value.trim();
+    if (fullName.length < 4 || phone.length < 8 || !photo || !$('accept').checked) {
+      $('err').textContent = "Remplis tous les champs, ajoute la photo de ta pièce d'identité et accepte l'engagement.";
+      return;
+    }
+    if (photo.length > 880000) { $('err').textContent = 'Photo trop lourde : essaie une photo plus simple.'; return; }
+    $('send').disabled = true;
+    try {
+      await setDoc(doc(db, 'developer_ids', user.uid), { image: photo, updatedAt: serverTimestamp() });
+      await setDoc(doc(db, 'developers', user.uid), { fullName, phone, email: user.email || '', status: 'pending', createdAt: serverTimestamp() });
+      route();
+    } catch (e) { $('err').textContent = "L'envoi a échoué : " + e.code; $('send').disabled = false; }
+  };
+}
+
+/** Réduit la photo (1280 px, JPEG) pour qu'elle reste légère. Renvoie le base64. */
+function compress(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', 0.6).split(',')[1]);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ---------- Développeur vérifié ----------
+
+function approvedScreen(dev) {
+  app.innerHTML = `<div class="note" style="margin-bottom:16px">✅ Développeur vérifié : <b>${esc(dev.fullName)}</b></div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="dashboard" aria-selected="${tab === 'dashboard'}">Tableau de bord</button>
+      <button class="tab" role="tab" data-tab="publish" aria-selected="${tab === 'publish'}">Publier une appli</button>
+      <button class="tab" role="tab" data-tab="guide" aria-selected="${tab === 'guide'}">Règles et contrôles</button>
+    </nav><section id="panel"></section>`;
+  app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { tab = b.dataset.tab; approvedScreen(dev); }));
+  if (tab === 'dashboard') dashboard($('panel'));
+  if (tab === 'publish') publishForm($('panel'));
+  if (tab === 'guide') guide($('panel'));
+}
+
+const STATUS = {
+  pending: ['Contrôle automatique en cours', 's-pending'],
+  review: ['Vérification par WouStore', 's-review'],
+  approved: ['Publiée', 's-approved'],
+  rejected: ['Refusée', 's-rejected'],
+};
+
+async function dashboard(panel) {
+  panel.innerHTML = '<div class="center">Chargement…</div>';
+  const [apps, subs] = await Promise.all([
+    getDocs(query(collection(db, 'apps'), where('owner', '==', user.uid))),
+    getDocs(query(collection(db, 'submissions'), where('uid', '==', user.uid))),
+  ]);
+  panel.innerHTML = '<h2>Mes applis publiées</h2><div id="apps"></div><h2>Mes propositions</h2><div id="subs"></div>';
+
+  if (apps.empty) $('apps').innerHTML = '<div class="muted">Aucune appli publiée pour l\'instant.</div>';
+  for (const a of apps.docs) {
+    const d = a.data();
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<h3>${esc(d.name)}</h3><div class="muted">${esc(a.id)} · ${esc(d.category)}</div>
+      <p class="stats"><span class="stat"><b data-avg>—</b><span class="muted">Note moyenne</span></span>
+      <span class="stat"><b data-n>—</b><span class="muted">Avis</span></span></p>
+      <div class="muted">Pour publier une nouvelle version : crée une nouvelle « Release » sur <a href="https://github.com/${esc(d.github)}/releases/new" target="_blank" rel="noopener">GitHub ↗</a>.
+      WouStore la contrôle et la propose aux utilisateurs dans l'heure.</div>
+      <p><button data-reviews>Voir et répondre aux avis</button></p><div data-list></div>`;
+    $('apps').appendChild(card);
+    const items = collection(db, 'reviews', a.id, 'items');
+    getAggregateFromServer(items, { avg: average('rating'), n: count() }).then((s) => {
+      const { avg, n } = s.data();
+      card.querySelector('[data-avg]').textContent = n ? avg.toFixed(1).replace('.', ',') + ' ★' : '—';
+      card.querySelector('[data-n]').textContent = n;
+    }).catch(() => {});
+    card.querySelector('[data-reviews]').onclick = () => reviews(a.id, card.querySelector('[data-list]'));
+  }
+
+  const list = subs.docs.map((s) => ({ id: s.id, ...s.data() }))
+    .sort((x, y) => (y.createdAt?.seconds || 0) - (x.createdAt?.seconds || 0));
+  if (!list.length) $('subs').innerHTML = '<div class="muted">Tu n\'as encore rien proposé. Va dans « Publier une appli ».</div>';
+  for (const s of list) {
+    const [label, cls] = STATUS[s.status] || STATUS.pending;
+    const checks = (s.checks || []).map((c) => `<li><span class="dot ${c.level}"></span><span><b>${esc(c.label)}</b> — ${esc(c.message)}</span></li>`).join('');
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<h3>${esc(s.app?.name)}</h3><div class="muted">${esc(s.app?.id)}</div>
+      <p><span class="status ${cls}">${label}</span></p>
+      ${s.status === 'rejected' && s.reason ? `<div class="soft">Raison : ${esc(s.reason)}</div>` : ''}
+      ${s.status === 'pending' && !checks ? '<div class="muted">Les contrôles automatiques passent toutes les 15 minutes.</div>' : ''}
+      ${checks ? `<ul class="gate">${checks}</ul>` : ''}`;
+    $('subs').appendChild(card);
+  }
+}
+
+async function reviews(appId, box) {
+  box.innerHTML = '<div class="muted">Chargement…</div>';
+  const snap = await getDocs(query(collection(db, 'reviews', appId, 'items'), orderBy('updatedAt', 'desc'), limit(50)));
+  if (snap.empty) { box.innerHTML = '<div class="muted">Pas encore d\'avis.</div>'; return; }
+  box.innerHTML = '';
+  for (const r of snap.docs) {
+    const v = r.data();
+    const el = document.createElement('div');
+    el.className = 'review';
+    el.innerHTML = `<div><b>${esc(v.name)}</b> <span class="stars">${'★'.repeat(v.rating)}${'☆'.repeat(5 - v.rating)}</span>
+      <span class="muted">${v.updatedAt ? v.updatedAt.toDate().toLocaleDateString('fr-FR') : ''}</span></div>
+      <div class="soft">${esc(v.text) || '<span class="muted">(sans commentaire)</span>'}</div>
+      ${v.reply ? `<div class="reply"><b>Ta réponse :</b> ${esc(v.reply)}</div>` : ''}
+      <label class="muted" style="font-weight:500">Répondre publiquement</label>
+      <textarea maxlength="500" style="min-height:70px">${esc(v.reply || '')}</textarea>
+      <p><button data-send>${v.reply ? 'Modifier ma réponse' : 'Publier ma réponse'}</button></p>`;
+    el.querySelector('[data-send]').onclick = async () => {
+      const text = el.querySelector('textarea').value.trim();
+      if (!text) return;
+      await updateDoc(doc(db, 'reviews', appId, 'items', r.id), { reply: text, replyAt: serverTimestamp() });
+      reviews(appId, box);
+    };
+    box.appendChild(el);
+  }
+}
+
+// ---------- Publier une appli ----------
+
+const DATA = [['nom', 'Nom ou e-mail'], ['position', 'Position'], ['contacts', 'Contacts'], ['photos', 'Photos ou vidéos'],
+  ['audio', 'Enregistrements audio'], ['fichiers', 'Fichiers'], ['paiements', 'Informations de paiement'], ['sante', 'Santé'],
+  ['usage', "Utilisation de l'appli (statistiques)"]];
+
+async function publishForm(panel) {
+  let cats = [];
+  try { cats = (await fetch(CATALOG, { cache: 'no-store' }).then((r) => r.json())).categories || []; } catch (_) {}
+  panel.innerHTML = `<div class="card">
+    <h2 style="margin-top:0">Publier une appli</h2>
+    <p class="muted">Ton appli passe des contrôles automatiques, comme sur Google Play. Si tout est vert, elle est publiée sans attendre.</p>
+
+    <label for="name">Nom de l'appli</label><input type="text" id="name" maxlength="40">
+    <label for="pkg">Nom de paquet Android <span class="muted">Exactement celui de ton APK, ex. com.monnom.monappli</span></label><input type="text" id="pkg">
+    <label for="tagline">Phrase courte</label><input type="text" id="tagline" maxlength="60" placeholder="Apprends l'anglais en 5 minutes par jour">
+    <label for="desc">Description <span class="muted">À quoi sert ton appli ? 40 caractères minimum.</span></label><textarea id="desc" maxlength="2000"></textarea>
+    <label for="cat">Catégorie</label><select id="cat"><option value="">Choisir…</option>
+      ${cats.map((c) => `<option value="${esc(c.name)}">${c.type === 'game' ? 'Jeu · ' : ''}${esc(c.name)}</option>`).join('')}</select>
+    <label for="age">Classification par âge</label>
+    <select id="age"><option value="">Choisir…</option><option value="all">Tout public</option><option value="12">12 ans et plus</option>
+      <option value="16">16 ans et plus</option><option value="18">18 ans et plus</option></select>
+
+    <h2>Sécurité des données</h2>
+    <div class="muted">Coche les données que ton appli collecte (ou envoie sur internet). Les utilisateurs verront ces informations.</div>
+    <div class="checks" style="margin-top:10px">${DATA.map(([v, t]) => `<label class="check"><input type="checkbox" name="data" value="${v}"><span>${t}</span></label>`).join('')}</div>
+    <label class="check" style="margin-top:12px"><input type="checkbox" id="shared"><span>Ces données sont partagées avec d'autres entreprises (publicité, statistiques…)</span></label>
+    <label for="privacy">Politique de confidentialité <span class="muted">Lien obligatoire si ton appli collecte des données</span></label>
+    <input type="url" id="privacy" placeholder="https://…">
+    <label for="why">Autorisations sensibles <span class="muted">Si ton appli lit les SMS, le journal d'appels, tous les fichiers, la position en arrière-plan… explique pourquoi.</span></label>
+    <textarea id="why" maxlength="500" style="min-height:70px"></textarea>
+
+    <h2>Où se trouve ton APK ?</h2>
+    <div class="note">
+      <ol>
+        <li>Crée un dépôt sur <a href="https://github.com/new" target="_blank" rel="noopener">GitHub</a> (gratuit).</li>
+        <li>Dans « Releases », publie une version et joins ton fichier <b>APK</b> (ou XAPK), signé avec ta clé.</li>
+        <li>Facultatif : joins aussi une vidéo <b>.mp4</b> d'une minute au plus, pour l'aperçu.</li>
+      </ol>
+      À chaque nouvelle « Release », WouStore contrôle la version et la propose aux utilisateurs.
+    </div>
+    <label for="repo">Dépôt GitHub <span class="muted">ex. monnom/monappli</span></label><input type="text" id="repo">
+    <div class="error" id="err"></div>
+    <p><button class="primary" id="send">Envoyer pour contrôle</button></p>
+  </div>`;
+
+  $('send').onclick = async () => {
+    const v = (id) => $(id).value.trim();
+    const m = v('repo').replace(/\.git$/, '').match(/(?:github\.com\/)?([\w.-]+)\/([\w.-]+)\/?$/);
+    const data = [...document.querySelectorAll('input[name=data]:checked')].map((c) => c.value);
+    const err = [];
+    if (v('name').length < 2) err.push("le nom");
+    if (!/^[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)+$/.test(v('pkg'))) err.push('le nom de paquet');
+    if (!v('tagline')) err.push('la phrase courte');
+    if (v('desc').length < 40) err.push('la description (40 caractères minimum)');
+    if (!v('cat')) err.push('la catégorie');
+    if (!v('age')) err.push("la classification par âge");
+    if (data.length && !/^https?:\/\//.test(v('privacy'))) err.push('la politique de confidentialité');
+    if (!m) err.push('le dépôt GitHub');
+    if (err.length) { $('err').textContent = 'À compléter : ' + err.join(', ') + '.'; return; }
+    $('send').disabled = true;
+    try {
+      await addDoc(collection(db, 'submissions'), {
+        uid: user.uid,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        app: {
+          id: v('pkg'), name: v('name'), developer: user.displayName || 'Développeur', tagline: v('tagline'),
+          description: v('desc'), category: v('cat'), ageRating: v('age'), dataCollected: data,
+          dataShared: $('shared').checked, privacyUrl: v('privacy'), permissionsWhy: v('why'),
+          github: `${m[1]}/${m[2]}`, asset: '\\.(apk|xapk|apks|apkm)$', icon: 'apps', color: '#3DDC97',
+          featured: false, openSource: false, screenshots: [],
+        },
+      });
+      tab = 'dashboard'; route();
+    } catch (e) { $('err').textContent = "L'envoi a échoué : " + e.code; $('send').disabled = false; }
+  };
+}
+
+function guide(panel) {
+  panel.innerHTML = `<div class="card"><h2 style="margin-top:0">Les contrôles automatiques</h2>
+    <p class="soft">Comme sur Google Play, chaque appli passe un portique de sécurité :
+    <b style="color:var(--accent)">vert</b> = publiée tout de suite,
+    <b style="color:var(--orange)">orange</b> = vérifiée par l'équipe WouStore,
+    <b style="color:var(--red)">rouge</b> = refusée (tu reçois la raison et tu peux corriger).</p>
+    <ul class="gate">
+      <li><span class="dot green"></span><span><b>Fichier</b> — une version publiée sur GitHub, avec un APK lisible.</span></li>
+      <li><span class="dot green"></span><span><b>Nom de paquet</b> — identique à celui déclaré.</span></li>
+      <li><span class="dot green"></span><span><b>Appli originale</b> — nom et paquet pas déjà utilisés dans WouStore.</span></li>
+      <li><span class="dot green"></span><span><b>Signature</b> — chaque version doit être signée avec la même clé.</span></li>
+      <li><span class="dot green"></span><span><b>Version d'Android visée</b> — API 30 (Android 11) ou plus récente.</span></li>
+      <li><span class="dot green"></span><span><b>Anti-virus</b> — analyse par environ 70 anti-virus (VirusTotal).</span></li>
+      <li><span class="dot orange"></span><span><b>Autorisations sensibles</b> — SMS, appels, tous les fichiers, accessibilité… : à justifier.</span></li>
+      <li><span class="dot green"></span><span><b>Sécurité des données</b> — ta déclaration doit correspondre à ce que fait l'APK.</span></li>
+      <li><span class="dot orange"></span><span><b>Imitation</b> — pas de nom de marque connue (WhatsApp, Free Fire, Airtel…).</span></li>
+      <li><span class="dot red"></span><span><b>Contenu</b> — pas d'appli piratée, d'arnaque ni de contenu interdit.</span></li>
+    </ul>
+    <h2>Après la publication</h2>
+    <p class="soft">Chaque nouvelle version est contrôlée à son tour. Une version avec une signature différente ou signalée par plusieurs anti-virus est retenue : les utilisateurs gardent la version précédente.
+    Une appli signalée par plusieurs utilisateurs est retirée en attendant une vérification.</p></div>`;
+}
+</script>
+</body>
+</html>

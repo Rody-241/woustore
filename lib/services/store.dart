@@ -90,13 +90,15 @@ class Store extends ChangeNotifier {
 
   Future<void> openPackage(String pkg) => _ch.invokeMethod('open', {'package': pkg});
 
+  Future<void> openUrl(String url) => _ch.invokeMethod('openUrl', {'url': url});
+
   final Map<String, AppState> _states = {};
   bool _started = false;
 
   AppState stateOf(String id) => _states.putIfAbsent(id, () => AppState());
 
   /// Les applis visibles dans le magasin (sans la fiche de WouStore lui-même).
-  List<AppEntry> get visibleApps => apps.where((a) => !a.hidden).toList();
+  List<AppEntry> get visibleApps => apps.where((a) => !a.hidden && !a.blocked).toList();
 
   List<AppEntry> get installedApps =>
       visibleApps.where((a) => stateOf(a.id).installedVersion != null).toList();
@@ -254,6 +256,10 @@ class Store extends ChangeNotifier {
             apps.add(AppEntry.fromJson(m));
           } catch (_) {}
         }
+        final blocked = await DevSpace.blockedApps().timeout(const Duration(seconds: 15));
+        for (final a in apps) {
+          if (blocked.contains(a.id)) a.blocked = true;
+        }
       }
     } catch (_) {}
     loading = false;
@@ -306,6 +312,7 @@ class Store extends ChangeNotifier {
       final rel = j['release'] as Map?;
       if (rel != null) _applyRelease(a, Map<String, dynamic>.from(rel));
       a.cert = j['cert'] as String?;
+      if (j['blocked'] != null) a.blocked = true;
       final scan = j['scan'] as Map?;
       if (scan != null) {
         a.scanStatus = scan['status'] as String?;

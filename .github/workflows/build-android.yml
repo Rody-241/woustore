@@ -9,6 +9,8 @@ on:
       - 'icons/**'
       - 'meta/**'
       - 'scans/**'
+      - 'tool/gate.py'
+      - '.github/workflows/gate.yml'
       - 'tool/fetch_icons.py'
       - '.github/workflows/icons.yml'
       - 'docs/**'

@@ -17,7 +17,6 @@ import zipfile
 
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 OUT = pathlib.Path("icons")
-OUT.mkdir(exist_ok=True)
 META = pathlib.Path("meta")
 
 
@@ -185,11 +184,15 @@ def apk_info(apk, aapt):
     sdk = re.search(r"sdkVersion:'(\d+)'", out)
     ver = re.search(r"versionName='([^']*)'", out)
     code = re.search(r"versionCode='(\d+)'", out)
+    target = re.search(r"targetSdkVersion:'(\d+)'", out)
+    pkg = re.search(r"package: name='([^']+)'", out)
     return {
         "permissions": perms,
         "minSdk": int(sdk.group(1)) if sdk else None,
         "versionName": ver.group(1) if ver else None,
         "versionCode": int(code.group(1)) if code else None,
+        "targetSdk": int(target.group(1)) if target else None,
+        "package": pkg.group(1) if pkg else None,
     }
 
 
@@ -370,7 +373,28 @@ def scan_submissions(aapt):
     return changed
 
 
+def hold_suspicious_update(app, info, previous):
+    """Surveillance après publication, comme Google Play : une nouvelle version suspecte
+    n'est pas proposée. Les utilisateurs gardent la version précédente, déjà contrôlée."""
+    reason = None
+    if previous.get("cert") and info.get("cert") and previous["cert"] != info["cert"]:
+        reason = "signature différente de la version précédente (fausse mise à jour possible)"
+    scan = info.get("scan") or {}
+    if scan.get("status") == "done" and (scan.get("malicious", 0) + scan.get("suspicious", 0)) >= 3:
+        reason = f"{scan.get('malicious', 0) + scan.get('suspicious', 0)} anti-virus signalent un danger"
+    if not reason:
+        return info
+    print(app["name"], ": nouvelle version retenue :", reason)
+    if previous.get("release") and previous.get("cert"):
+        kept = dict(previous)
+        kept["heldUpdate"] = {"tag": (info.get("release") or {}).get("tag"), "reason": reason}
+        return kept
+    # Pas de version saine connue : l'appli est retirée du magasin.
+    info["blocked"] = {"reason": reason}
+    return info
+
 def main():
+    OUT.mkdir(exist_ok=True)
     catalog = json.load(open("catalog.json"))
     known = {a["id"] for a in catalog["apps"]}
     catalog["apps"] += [a for a in published_apps() if a["id"] not in known]
@@ -400,8 +424,9 @@ def main():
             }
             info["cert"] = apk_cert(apk, aapt)
             meta_file = META / f"{app['id']}.json"
-            prev = json.loads(meta_file.read_text()).get("scan") if meta_file.exists() else None
-            info["scan"] = vt_scan(apk, prev)
+            previous = json.loads(meta_file.read_text()) if meta_file.exists() else {}
+            info["scan"] = vt_scan(apk, previous.get("scan"))
+            info = hold_suspicious_update(app, info, previous)
             data = None if keep else icon_from_apk(apk, aapt)
             os.remove(apk)
         except Exception as e:  # une appli en erreur ne bloque pas les autres
@@ -436,4 +461,5 @@ def main():
     print("CHANGED" if changed else "UNCHANGED")
 
 
-main()
+if __name__ == "__main__":
+    main()

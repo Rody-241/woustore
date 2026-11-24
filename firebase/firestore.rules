@@ -39,6 +39,28 @@ service cloud.firestore {
       // Supprimer : l'auteur de l'avis, ou un administrateur.
       allow delete: if request.auth != null
         && (request.auth.uid == uid || isAdmin());
+
+      // Le développeur de l'appli peut répondre aux avis (seulement les champs de réponse).
+      allow update: if request.auth != null
+        && get(/databases/$(database)/documents/apps/$(appId)).data.owner == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply', 'replyAt'])
+        && request.resource.data.reply is string
+        && request.resource.data.reply.size() <= 500;
+    }
+
+    // Signalements : un par personne et par appli ; seul l'administrateur les lit.
+    match /reports/{appId}/items/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['reason', 'createdAt'])
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() <= 200;
+      allow read, delete: if isAdmin();
+    }
+
+    // Applis retirées (signalements) : tout le monde le sait, seul l'administrateur décide.
+    match /moderation/{appId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // ---------- Espace développeur ----------

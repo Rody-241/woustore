@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/app_entry.dart';
 import '../permissions.dart';
+import '../services/account.dart';
+import '../services/developer.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
@@ -115,6 +117,14 @@ class AppScreen extends StatelessWidget {
               ReviewsSection(app: app),
               const SizedBox(height: 28),
               _Section(title: 'Informations', child: _Infos(app: app)),
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => _report(context, app),
+                  icon: const Icon(Icons.flag_outlined, size: 18, color: W.muted),
+                  label: Text('Signaler cette appli', style: W.body(14, color: W.muted, weight: FontWeight.w600)),
+                ),
+              ),
             ],
           );
         },
@@ -569,6 +579,15 @@ class _Infos extends StatelessWidget {
       ('Android requis', app.androidLabel),
       ('Catégorie', app.category),
       ('Code source', app.openSource ? 'Open source (github.com/${app.github})' : 'Fermé'),
+      if (app.ageRating != null)
+        ('Âge', switch (app.ageRating) { 'all' => 'Tout public', '18' => '18 ans et plus', final a => '$a ans et plus' }),
+      if (app.ageRating != null)
+        (
+          'Données',
+          app.dataCollected.isEmpty
+              ? 'Aucune donnée collectée'
+              : 'Collecte : ${app.dataCollected.join(', ')}${app.dataShared ? ' (partagées avec des tiers)' : ''}'
+        ),
       if (app.scanStatus == 'done')
         (
           'Anti-virus',
@@ -597,5 +616,54 @@ class _Infos extends StatelessWidget {
           ),
       ],
     );
+  }
+}
+
+
+/// Signaler une appli dangereuse ou trompeuse (comme sur Google Play).
+Future<void> _report(BuildContext context, AppEntry app) async {
+  final messenger = ScaffoldMessenger.of(context);
+  if (Account.i.user == null) {
+    final ok = await Account.i.signIn();
+    if (!ok) return;
+  }
+  if (!context.mounted) return;
+  const reasons = [
+    'Virus, vol de données ou arnaque',
+    'Contenu choquant ou interdit',
+    'Copie ou imitation d’une autre appli',
+    'Ne fonctionne pas',
+    'Autre',
+  ];
+  final reason = await showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: W.bg,
+    showDragHandle: true,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Text('Pourquoi signales-tu ${app.name} ?', style: W.title(20)),
+          ),
+          for (final r in reasons)
+            ListTile(
+              title: Text(r, style: W.body(15)),
+              trailing: const Icon(Icons.chevron_right_rounded, color: W.muted),
+              onTap: () => Navigator.pop(ctx, r),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
+  if (reason == null) return;
+  try {
+    await DevSpace.report(app.id, Account.i.user!.uid, reason);
+    messenger.showSnackBar(const SnackBar(content: Text('Merci, ton signalement a été envoyé.')));
+  } catch (_) {
+    messenger.showSnackBar(const SnackBar(content: Text('Le signalement n’a pas pu être envoyé.')));
   }
 }
