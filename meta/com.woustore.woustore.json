@@ -14,21 +14,21 @@
     "moe.shizuku.manager.permission.API_V23"
   ],
   "minSdk": 24,
-  "versionName": "1.0.23",
-  "versionCode": 23,
+  "versionName": "1.0.22",
+  "versionCode": 22,
   "release": {
-    "tag": "build-23",
-    "publishedAt": "2026-11-24T08:34:42Z",
+    "tag": "build-22",
+    "publishedAt": "2026-11-24T08:36:21Z",
     "notes": "WouStore.apk : téléphones récents (64 bits), presque tous les Android depuis 2017.\nWouStore-32bit.apk : anciens téléphones (32 bits).\n",
     "assets": [
       {
         "name": "WouStore-32bit.apk",
-        "url": "https://github.com/Rody-241/woustore/releases/download/build-23/WouStore-32bit.apk",
+        "url": "https://github.com/Rody-241/woustore/releases/download/build-22/WouStore-32bit.apk",
         "size": 18995860
       },
       {
         "name": "WouStore.apk",
-        "url": "https://github.com/Rody-241/woustore/releases/download/build-23/WouStore.apk",
+        "url": "https://github.com/Rody-241/woustore/releases/download/build-22/WouStore.apk",
         "size": 21207696
       }
     ]
