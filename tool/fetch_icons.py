@@ -456,8 +456,7 @@ def main():
             print(app["name"], ": logo mis à jour")
         else:
             print(app["name"], ": logo inchangé")
-    if scan_submissions(aapt):
-        changed = True
+    # (Les applis proposées sont contrôlées par le portique : tool/gate.py.)
     print("CHANGED" if changed else "UNCHANGED")
 
 
