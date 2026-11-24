@@ -10,6 +10,8 @@
   "minSdk": 24,
   "versionName": "13.6.0.r1086.2650830c",
   "versionCode": 1086,
+  "targetSdk": 36,
+  "package": "moe.shizuku.privileged.api",
   "release": {
     "tag": "v13.6.0",
     "publishedAt": "2025-05-25T13:19:47Z",

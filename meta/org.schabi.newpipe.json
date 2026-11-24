@@ -16,6 +16,8 @@
   "minSdk": 23,
   "versionName": "0.29.3",
   "versionCode": 1017,
+  "targetSdk": 35,
+  "package": "org.schabi.newpipe",
   "release": {
     "tag": "v0.29.3",
     "publishedAt": "2026-11-10T09:52:10Z",

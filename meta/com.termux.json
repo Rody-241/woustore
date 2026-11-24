@@ -20,6 +20,8 @@
   "minSdk": 24,
   "versionName": "0.118.3",
   "versionCode": 1002,
+  "targetSdk": 28,
+  "package": "com.termux",
   "release": {
     "tag": "v0.118.3",
     "publishedAt": "2025-05-22T22:47:26Z",

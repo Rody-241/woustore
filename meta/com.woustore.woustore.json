@@ -14,28 +14,30 @@
     "moe.shizuku.manager.permission.API_V23"
   ],
   "minSdk": 24,
-  "versionName": "1.0.24",
-  "versionCode": 24,
+  "versionName": "1.0.25",
+  "versionCode": 25,
+  "targetSdk": 33,
+  "package": "com.woustore.woustore",
   "release": {
-    "tag": "build-24",
-    "publishedAt": "2026-11-24T09:00:30Z",
+    "tag": "build-25",
+    "publishedAt": "2026-11-24T09:35:01Z",
     "notes": "WouStore.apk : téléphones récents (64 bits), presque tous les Android depuis 2017.\nWouStore-32bit.apk : anciens téléphones (32 bits).\n",
     "assets": [
       {
         "name": "WouStore-32bit.apk",
-        "url": "https://github.com/Rody-241/woustore/releases/download/build-24/WouStore-32bit.apk",
-        "size": 18995856
+        "url": "https://github.com/Rody-241/woustore/releases/download/build-25/WouStore-32bit.apk",
+        "size": 18678084
       },
       {
         "name": "WouStore.apk",
-        "url": "https://github.com/Rody-241/woustore/releases/download/build-24/WouStore.apk",
-        "size": 21207692
+        "url": "https://github.com/Rody-241/woustore/releases/download/build-25/WouStore.apk",
+        "size": 20889920
       }
     ]
   },
   "cert": "a8c820259bf1b2dd4948626d4f14eccbe153b3a7f8349e63eeb2bb0616b4ce71",
   "scan": {
-    "sha256": "a4a34915ec12a997cf75467d23e1adf09a017b3c96cf284e1e42d0c9238835ef",
+    "sha256": "a84095aca156dfcaffbc0165cdd2197c2ddc1164c2e2392f9a8f50647a0242be",
     "status": "disabled"
   }
 }
