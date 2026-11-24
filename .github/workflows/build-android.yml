@@ -10,6 +10,7 @@ on:
       - 'meta/**'
       - 'tool/fetch_icons.py'
       - '.github/workflows/icons.yml'
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
