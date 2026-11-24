@@ -74,7 +74,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, getDocs, query, where, orderBy, limit, writeBatch, updateDoc, deleteDoc, serverTimestamp }
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, orderBy, limit, writeBatch, updateDoc, deleteDoc, setDoc, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
 
 // Projet Firebase de WouStore (valeurs publiques : la sécurité vient des règles Firestore).
@@ -88,6 +88,30 @@ const fb = initializeApp({
 const auth = getAuth(fb);
 const db = getFirestore(fb);
 const CATALOG = 'https://raw.githubusercontent.com/Rody-241/woustore/main/catalog.json';
+const SCANS = 'https://raw.githubusercontent.com/Rody-241/woustore/main/scans/';
+
+// Résultat de l'analyse automatique (robot GitHub + VirusTotal), mis à jour toutes les heures.
+async function scanHtml(id) {
+  let r;
+  try { r = await fetch(SCANS + id + '.json?t=' + Date.now(), { cache: 'no-store' }).then((x) => (x.ok ? x.json() : null)); }
+  catch (_) { r = null; }
+  if (!r) return '<div class="muted">🔄 Analyse automatique pas encore faite (le robot passe toutes les heures).</div>';
+  if (r.status === 'no_apk') return '<div style="color:var(--red)">❌ Aucun fichier APK dans la dernière version GitHub.</div>';
+  if (r.status === 'error') return `<div style="color:var(--red)">❌ ${esc(r.message)}</div>`;
+  const s = r.scan || {};
+  let verdict;
+  if (s.status === 'done') {
+    const bad = (s.malicious || 0) + (s.suspicious || 0);
+    verdict = bad === 0
+      ? `<span style="color:var(--accent)">✅ Aucune menace (${s.engines} anti-virus)</span>`
+      : `<span style="color:var(--red)">⚠️ ${bad} anti-virus sur ${s.engines} signalent un danger</span>`;
+  } else if (s.status === 'pending') verdict = '🔄 Analyse VirusTotal en cours';
+  else if (s.status === 'disabled') verdict = '⚪ Anti-virus pas encore configuré';
+  else verdict = '❌ Analyse impossible';
+  const link = s.sha256 ? ` · <a href="https://www.virustotal.com/gui/file/${esc(s.sha256)}" target="_blank" rel="noopener">détails ↗</a>` : '';
+  const pkg = r.package ? `<div class="muted">Fichier ${esc(r.file)} · paquet ${esc(r.package)}</div>` : `<div class="muted">Fichier ${esc(r.file || '')}</div>`;
+  return `<div>${verdict}${link}</div>${pkg}`;
+}
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -220,11 +244,14 @@ async function renderSubs(panel, snap) {
       <div><b>${esc(a.tagline)}</b></div>
       <div class="soft">${esc(a.description)}</div>
       <div><a href="https://github.com/${esc(a.github)}/releases" target="_blank" rel="noopener">Voir les versions sur GitHub ↗</a></div>
-      <div class="muted">Avant de valider : vérifie qu'un fichier APK est publié, et essaie l'appli en cas de doute.</div>
+      <div data-scan class="muted">Analyse…</div>
+      <div class="muted">Avant de valider : vérifie le résultat de l'analyse, et essaie l'appli en cas de doute.</div>
       <div class="row"><button class="danger" data-no>Refuser</button><button class="primary" data-yes>Valider et publier</button></div>`;
     $('list').appendChild(card);
+    scanHtml(d.id).then((h) => (card.querySelector('[data-scan]').outerHTML = h));
     card.querySelector('[data-yes]').onclick = async () => {
       const batch = writeBatch(db);
+      batch.delete(doc(db, 'submission_queue', d.id));
       batch.update(doc(db, 'submissions', d.id), { status: 'approved', reason: null, decidedAt: serverTimestamp() });
       batch.set(doc(db, 'apps', a.id), { ...a, owner: v.uid, publishedAt: serverTimestamp() });
       await batch.commit();
@@ -232,7 +259,10 @@ async function renderSubs(panel, snap) {
     };
     card.querySelector('[data-no]').onclick = async () => {
       const reason = await askReason(); if (reason === null) return;
-      await updateDoc(doc(db, 'submissions', d.id), { status: 'rejected', reason, decidedAt: serverTimestamp() });
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'submissions', d.id), { status: 'rejected', reason, decidedAt: serverTimestamp() });
+      batch.delete(doc(db, 'submission_queue', d.id));
+      await batch.commit();
       toast('Appli refusée.'); render();
     };
   }

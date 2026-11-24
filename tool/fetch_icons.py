@@ -233,6 +233,143 @@ def published_apps():
     return apps
 
 
+# ---------- Anti-virus : VirusTotal (environ 70 anti-virus) ----------
+
+VT_KEY = os.environ.get("VIRUSTOTAL_API_KEY", "")
+VT = "https://www.virustotal.com/api/v3"
+_vt_calls = [0]
+
+
+def _vt(method, url, data=None, headers=None):
+    """Appel à VirusTotal, en respectant la limite gratuite (4 appels par minute)."""
+    import time
+    if _vt_calls[0]:
+        time.sleep(16)
+    _vt_calls[0] += 1
+    h = {"x-apikey": VT_KEY, "User-Agent": "WouStore"}
+    h.update(headers or {})
+    req = urllib.request.Request(url, data=data, headers=h, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            return r.status, json.load(r)
+    except urllib.error.HTTPError as e:
+        return e.code, None
+
+
+def sha256_of(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(1 << 20):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _upload(path):
+    import uuid
+    size = os.path.getsize(path)
+    url = VT + "/files"
+    if size > 32 * 1024 * 1024:  # gros fichiers : adresse d'envoi spéciale
+        st, js = _vt("GET", VT + "/files/upload_url")
+        if st != 200:
+            return False
+        url = js["data"]
+    boundary = uuid.uuid4().hex
+    with open(path, "rb") as f:
+        content = f.read()
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"app.apk\"\r\n"
+            f"Content-Type: application/octet-stream\r\n\r\n").encode() + content + f"\r\n--{boundary}--\r\n".encode()
+    st, _ = _vt("POST", url, data=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    return st == 200
+
+
+def vt_scan(path, previous=None):
+    """Résultat de l'analyse du fichier. Réutilise l'ancien résultat si le fichier n'a pas changé."""
+    sha = sha256_of(path)
+    if previous and previous.get("sha256") == sha and previous.get("status") == "done":
+        return previous
+    if not VT_KEY:
+        return {"sha256": sha, "status": "disabled"}
+    st, js = _vt("GET", f"{VT}/files/{sha}")
+    if st == 200:
+        stats = js["data"]["attributes"].get("last_analysis_stats", {})
+        total = sum(v for v in stats.values() if isinstance(v, int))
+        if total == 0:
+            return {"sha256": sha, "status": "pending", "link": f"https://www.virustotal.com/gui/file/{sha}"}
+        return {
+            "sha256": sha,
+            "status": "done",
+            "malicious": stats.get("malicious", 0),
+            "suspicious": stats.get("suspicious", 0),
+            "engines": total,
+            "link": f"https://www.virustotal.com/gui/file/{sha}",
+        }
+    if st == 404:  # jamais vu par VirusTotal : on l'envoie, résultat au prochain passage
+        ok = _upload(path)
+        return {"sha256": sha, "status": "pending" if ok else "error"}
+    return {"sha256": sha, "status": "error", "code": st}
+
+
+def submission_queue():
+    """Les applis proposées en attente (seulement le dépôt GitHub : aucune donnée personnelle)."""
+    url = FIRESTORE.replace("/documents/apps?", "/documents/submission_queue?")
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "WouStore"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            docs = json.load(r).get("documents", [])
+    except Exception as e:
+        print("File d'attente illisible :", e)
+        return []
+    out = []
+    for d in docs:
+        q = {k: _value(v) for k, v in d.get("fields", {}).items()}
+        q["docId"] = d["name"].rsplit("/", 1)[-1]
+        if q.get("github"):
+            out.append(q)
+    return out
+
+
+def scan_submissions(aapt):
+    """Analyse les applis en attente ; le résultat va dans scans/<id>.json pour la page d'administration."""
+    scans = pathlib.Path("scans")
+    scans.mkdir(exist_ok=True)
+    changed = False
+    for q in submission_queue():
+        dest = scans / f"{q['docId']}.json"
+        previous = json.loads(dest.read_text()) if dest.exists() else None
+        result = {"github": q["github"], "checkedAt": __import__("datetime").datetime.utcnow().isoformat() + "Z"}
+        try:
+            rel = api(f"https://api.github.com/repos/{q['github']}/releases/latest")
+            pat = re.compile(q.get("asset") or r"\.(apk|xapk|apks|apkm)$")
+            asset = next((a for a in rel["assets"] if pat.search(a["name"])), None)
+            if asset is None:
+                result.update({"status": "no_apk", "message": "Aucun fichier APK dans la dernière version publiée."})
+            else:
+                f = f"/tmp/queue-{q['docId']}"
+                download(asset["browser_download_url"], f)
+                result["file"] = asset["name"]
+                result["size"] = asset["size"]
+                result["tag"] = rel.get("tag_name")
+                if asset["name"].lower().endswith(".apk"):
+                    info = apk_info(f, aapt)
+                    result["package"] = (re.search(r"package: name='([^']+)'", subprocess.run(
+                        [aapt, "dump", "badging", f], capture_output=True, text=True).stdout) or [None, None])[1]
+                    result["permissions"] = info["permissions"]
+                result["scan"] = vt_scan(f, (previous or {}).get("scan"))
+                os.remove(f)
+        except Exception as e:
+            result.update({"status": "error", "message": f"Dépôt ou version introuvable ({e})"})
+        old = dict(previous or {})
+        old.pop("checkedAt", None)
+        new = dict(result)
+        new.pop("checkedAt", None)
+        if old != new:
+            dest.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+            changed = True
+            print("Proposition", q["docId"], ":", result.get("scan", {}).get("status", result.get("status")))
+    return changed
+
+
 def main():
     catalog = json.load(open("catalog.json"))
     known = {a["id"] for a in catalog["apps"]}
@@ -262,6 +399,9 @@ def main():
                 ],
             }
             info["cert"] = apk_cert(apk, aapt)
+            meta_file = META / f"{app['id']}.json"
+            prev = json.loads(meta_file.read_text()).get("scan") if meta_file.exists() else None
+            info["scan"] = vt_scan(apk, prev)
             data = None if keep else icon_from_apk(apk, aapt)
             os.remove(apk)
         except Exception as e:  # une appli en erreur ne bloque pas les autres
@@ -291,6 +431,8 @@ def main():
             print(app["name"], ": logo mis à jour")
         else:
             print(app["name"], ": logo inchangé")
+    if scan_submissions(aapt):
+        changed = True
     print("CHANGED" if changed else "UNCHANGED")
 
 

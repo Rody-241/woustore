@@ -78,6 +78,17 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // File d'attente de l'analyse anti-virus : seulement le dépôt GitHub (lu par le robot).
+    match /submission_queue/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['github', 'asset', 'createdAt'])
+        && request.resource.data.github is string
+        && request.resource.data.github.size() <= 120
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.status == 'approved';
+      allow delete: if isAdmin();
+    }
+
     // Les applis publiées : tout le monde les lit, seul l'administrateur les écrit.
     match /apps/{appId} {
       allow read: if true;

@@ -21,13 +21,14 @@ jobs:
       - name: Récupérer le vrai logo de chaque appli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
         run: |
           pip install --quiet pillow
           python3 tool/fetch_icons.py
 
       - name: Enregistrer les logos
         run: |
-          git add icons meta
+          git add icons meta scans
           if git diff --cached --quiet; then
             echo "Aucun logo nouveau."
           else

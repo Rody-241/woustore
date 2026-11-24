@@ -131,12 +131,21 @@ class DevSpace {
   }
 
   static Future<void> submit(Map<String, dynamic> app) async {
-    await _db.collection('submissions').add({
+    final ref = _db.collection('submissions').doc();
+    final batch = _db.batch();
+    batch.set(ref, {
       'uid': _uid,
       'app': app,
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
     });
+    // Pour l'analyse anti-virus automatique : seulement le dépôt, rien de personnel.
+    batch.set(_db.collection('submission_queue').doc(ref.id), {
+      'github': app['github'],
+      'asset': app['asset'],
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
   }
 
   /// Les applis validées (publiées par des développeurs), lues par tout le monde.

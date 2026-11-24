@@ -80,6 +80,12 @@ class AppEntry {
   /// Empreinte (SHA-256) du certificat qui signe l'APK publié.
   String? cert;
 
+  /// Analyse VirusTotal du fichier publié : done / pending / disabled / error.
+  String? scanStatus;
+  int? scanMalicious;
+  int? scanEngines;
+  String? scanLink;
+
   factory AppEntry.fromJson(Map<String, dynamic> j) {
     return AppEntry(
       id: j['id'] as String,

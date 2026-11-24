@@ -306,6 +306,13 @@ class Store extends ChangeNotifier {
       final rel = j['release'] as Map?;
       if (rel != null) _applyRelease(a, Map<String, dynamic>.from(rel));
       a.cert = j['cert'] as String?;
+      final scan = j['scan'] as Map?;
+      if (scan != null) {
+        a.scanStatus = scan['status'] as String?;
+        a.scanMalicious = ((scan['malicious'] as num?) ?? 0).toInt() + ((scan['suspicious'] as num?) ?? 0).toInt();
+        a.scanEngines = (scan['engines'] as num?)?.toInt();
+        a.scanLink = scan['link'] as String?;
+      }
     } catch (_) {}
   }
 

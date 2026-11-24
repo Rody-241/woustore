@@ -569,6 +569,15 @@ class _Infos extends StatelessWidget {
       ('Android requis', app.androidLabel),
       ('Catégorie', app.category),
       ('Code source', app.openSource ? 'Open source (github.com/${app.github})' : 'Fermé'),
+      if (app.scanStatus == 'done')
+        (
+          'Anti-virus',
+          (app.scanMalicious ?? 0) == 0
+              ? '✅ Aucune menace détectée (${app.scanEngines} anti-virus, VirusTotal)'
+              : '⚠️ ${app.scanMalicious} anti-virus sur ${app.scanEngines} signalent un danger'
+        )
+      else if (app.scanStatus == 'pending')
+        ('Anti-virus', 'Analyse en cours par VirusTotal'),
     ];
     final perms = app.permissions;
     return Column(
