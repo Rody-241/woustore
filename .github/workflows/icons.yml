@@ -12,6 +12,11 @@ on:
 permissions:
   contents: write
 
+# Un seul passage du robot à la fois.
+concurrency:
+  group: icons
+  cancel-in-progress: false
+
 jobs:
   icons:
     runs-on: ubuntu-latest
@@ -35,5 +40,5 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "Logos et infos des applis mis à jour"
-            git push
+            for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
           fi
