@@ -38,6 +38,10 @@
   "cert": "a8c820259bf1b2dd4948626d4f14eccbe153b3a7f8349e63eeb2bb0616b4ce71",
   "scan": {
     "sha256": "6366d41e8ccafe57a3fabc2f8772356375ddfca4895272a135572b2a9b3b099f",
-    "status": "pending"
+    "status": "done",
+    "malicious": 0,
+    "suspicious": 0,
+    "engines": 74,
+    "link": "https://www.virustotal.com/gui/file/6366d41e8ccafe57a3fabc2f8772356375ddfca4895272a135572b2a9b3b099f"
   }
 }
