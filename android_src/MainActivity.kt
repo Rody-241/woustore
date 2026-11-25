@@ -443,6 +443,35 @@ object Universal {
         )
     }
 
+    /** La fiche fournie avec les archives XAPK (manifest.json), APKM (info.json) ou APKS (meta.sai_v2.json). */
+    private fun sheetInfo(zip: java.util.zip.ZipFile): Map<String, Any?> {
+        fun read(name: String): org.json.JSONObject? = try {
+            zip.getEntry(name)?.let { e -> zip.getInputStream(e).use { org.json.JSONObject(it.readBytes().toString(Charsets.UTF_8)) } }
+        } catch (e: Throwable) { null }
+        val out = mutableMapOf<String, Any?>()
+        read("manifest.json")?.let { j ->
+            out["package"] = j.optString("package_name").ifEmpty { null }
+            out["label"] = j.optString("name").ifEmpty { null }
+            out["versionName"] = j.optString("version_name").ifEmpty { null }
+            j.optString("version_code").toLongOrNull()?.let { out["versionCode"] = it }
+        }
+        read("info.json")?.let { j ->
+            out["package"] = out["package"] ?: j.optString("pname").ifEmpty { null }
+            out["label"] = out["label"] ?: j.optString("app_name").ifEmpty { null }
+            out["versionName"] = out["versionName"] ?: j.optString("release_version").ifEmpty { null }
+        }
+        read("meta.sai_v2.json")?.let { j ->
+            out["package"] = out["package"] ?: j.optString("package").ifEmpty { null }
+            out["label"] = out["label"] ?: j.optString("label").ifEmpty { null }
+            out["versionName"] = out["versionName"] ?: j.optString("version_name").ifEmpty { null }
+        }
+        val iconEntry = listOf("icon.png", "icon.jpg", "icon.webp").firstNotNullOfOrNull { zip.getEntry(it) }
+        if (iconEntry != null) try {
+            out["icon"] = zip.getInputStream(iconEntry).use { it.readBytes() }
+        } catch (_: Throwable) {}
+        return out.filterValues { it != null }
+    }
+
     /** Ce que contient le fichier, sans tout décompresser. */
     fun analyze(ctx: Context, file: File): Map<String, Any?> {
         if (isPlainApk(file)) {
@@ -459,7 +488,7 @@ object Universal {
             val base = baseEntry(zip, apks)!!
             val tmp = File(ctx.cacheDir, "analyse-base.apk")
             extract(zip, base, tmp)
-            val info = archiveInfo(ctx, tmp)
+            val info = sheetInfo(zip) + archiveInfo(ctx, tmp).filterValues { it != null && it != "" }
             tmp.delete()
             val parts = keepForDevice(apks.map { e -> e.name })
             val obbs = obbEntries(zip)
@@ -486,8 +515,9 @@ object Universal {
             }
             val base = baseEntry(zip, apks)!!
             val baseFile = files[apks.filter { it.name in keep }.indexOf(base).coerceAtLeast(0)]
-            val info = archiveInfo(ctx, baseFile)
-            val pkg = info["package"] as? String ?: throw IllegalStateException("Appli illisible")
+            val info = sheetInfo(zip) + archiveInfo(ctx, baseFile).filterValues { it != null && it != "" }
+            val pkg = info["package"] as? String
+                ?: throw IllegalStateException("Impossible de trouver le nom de paquet de cette appli")
             val obbs = obbEntries(zip).map { e ->
                 val name = e.name.substringAfterLast('/')
                 extract(zip, e, File(dir, "obb-$name")) to name
