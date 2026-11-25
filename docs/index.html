@@ -3,365 +3,83 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>WouStore · Administration</title>
+<title>WouStore · Le magasin d'applis du Gabon</title>
+<meta name="description" content="WouStore : installe des applis et des jeux en toute sécurité, sans Play Store. Chaque appli est contrôlée par 70 anti-virus.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
 <style>
-  :root {
-    --bg: #0A0C10; --surface: #14181F; --surface2: #1A1F29; --line: #1C222B; --border: #262D38;
-    --text: #F2F4F7; --soft: #C9D1DC; --muted: #9AA4B2; --accent: #3DDC97; --on-accent: #062016;
-    --red: #FF6B6B; --orange: #FFB454;
-  }
+  :root { --bg: #0A0C10; --surface: #14181F; --border: #262D38; --text: #F2F4F7; --soft: #C9D1DC; --muted: #9AA4B2; --accent: #3DDC97; --on-accent: #062016; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; }
-  h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.3px; margin: 0; }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
-  header { display: flex; align-items: center; gap: 12px; padding: 8px 0 20px; flex-wrap: wrap; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, system-ui, sans-serif; }
+  h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.5px; margin: 0; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 60px; }
+  nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--accent); display: grid; place-items: center; }
-  header h1 { font-size: 22px; flex: 1; min-width: 160px; }
-  header h1 small { display: block; font: 500 13px Inter, sans-serif; color: var(--muted); letter-spacing: 0; }
-  button { font: 600 14px Inter, sans-serif; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); padding: 0 16px; min-height: 44px; cursor: pointer; }
-  button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
-  button.danger { color: var(--red); }
-  button:disabled { opacity: .5; cursor: default; }
-  .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; }
-  .tab { white-space: nowrap; border-radius: 999px; background: var(--surface); }
-  .tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-  .badge { display: inline-block; min-width: 22px; padding: 0 6px; margin-left: 6px; border-radius: 99px; background: var(--orange); color: #1d1300; font-size: 12px; line-height: 20px; text-align: center; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-  .card h3 { font-size: 18px; }
-  .muted { color: var(--muted); font-size: 13px; }
-  .soft { color: var(--soft); }
-  .row { display: flex; gap: 10px; }
-  .row > * { flex: 1; }
-  .idphoto { width: 100%; max-height: 260px; object-fit: contain; background: #000; border-radius: 12px; cursor: zoom-in; }
-  a { color: var(--accent); }
-  .empty, .center { text-align: center; color: var(--muted); padding: 40px 16px; }
-  .center h2 { color: var(--text); font-size: 24px; margin-bottom: 8px; }
-  .stars { color: var(--accent); letter-spacing: 1px; }
-  .review { border-top: 1px solid var(--line); padding-top: 10px; }
-  .gate { list-style: none; padding: 0; margin: 0; }
-  .gate li { display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
-  .green { background: var(--accent); } .orange { background: var(--orange); } .red { background: var(--red); } .wait { background: var(--muted); }
-  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border); padding: 12px 18px; border-radius: 12px; display: none; max-width: 90vw; }
-  dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 18px; max-width: 94vw; padding: 16px; }
-  dialog::backdrop { background: rgba(0,0,0,.7); }
-  dialog img { max-width: 88vw; max-height: 80vh; display: block; }
-  textarea { width: 100%; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 10px; font: inherit; min-height: 80px; }
+  nav b { font: 700 22px 'Space Grotesk', sans-serif; flex: 1; }
+  nav a { color: var(--soft); text-decoration: none; font-weight: 600; font-size: 15px; padding: 10px 4px; }
+  .hero { padding: 64px 0 40px; display: grid; gap: 28px; }
+  .hero h1 { font-size: clamp(36px, 7vw, 64px); line-height: 1.05; max-width: 14ch; }
+  .hero p { color: var(--soft); font-size: 18px; max-width: 46ch; margin: 0; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 24px; border-radius: 16px; font-weight: 700; text-decoration: none; }
+  .btn.primary { background: var(--accent); color: var(--on-accent); }
+  .btn.ghost { border: 1px solid var(--border); color: var(--text); }
+  .muted { color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; margin-top: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 22px; }
+  .card h3 { font-size: 19px; margin: 12px 0 6px; }
+  .card p { color: var(--soft); margin: 0; font-size: 15px; }
+  .icon { width: 44px; height: 44px; border-radius: 12px; background: #0F2A1F; display: grid; place-items: center; }
+  h2 { font-size: 30px; margin-top: 56px; }
+  ol { color: var(--soft); padding-left: 22px; }
+  ol li { margin: 8px 0; }
+  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; display: flex; gap: 18px; flex-wrap: wrap; }
+  footer a { color: var(--muted); }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="logo" aria-hidden="true">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#062016" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l3.5 12L12 9l5.5 9L21 6"/></svg>
+  <nav>
+    <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#062016" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l3.5 12L12 9l5.5 9L21 6"/></svg></div>
+    <b>WouStore</b>
+    <a href="dev/">Développeurs</a>
+  </nav>
+
+  <section class="hero">
+    <h1>Le magasin d'applis du Gabon.</h1>
+    <p>Installe des applis et des jeux en toute sécurité, même sans Play Store. Chaque appli est contrôlée par environ 70 anti-virus avant d'arriver sur ton téléphone.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/Rody-241/woustore/releases/latest/download/WouStore.apk">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>
+        Télécharger WouStore
+      </a>
+      <a class="btn ghost" href="https://github.com/Rody-241/woustore/releases/latest/download/WouStore-32bit.apk">Version pour anciens téléphones</a>
     </div>
-    <h1>WouStore · Administration <small id="who">Connexion…</small></h1>
-    <button id="signout" hidden>Déconnexion</button>
-  </header>
+    <div class="muted">Android 7 ou plus récent · 18 Mo · Gratuit</div>
+  </section>
 
-  <main id="app"><div class="center">Chargement…</div></main>
+  <div class="grid">
+    <div class="card"><div class="icon">🛡️</div><h3>Contrôlé contre les virus</h3><p>Chaque appli et chaque mise à jour passent un portique de sécurité automatique, comme sur Google Play.</p></div>
+    <div class="card"><div class="icon">📦</div><h3>Tous les formats</h3><p>APK, XAPK, APKS, données de jeu (OBB) : WouStore installe tout seul, sans manipulation compliquée.</p></div>
+    <div class="card"><div class="icon">🔄</div><h3>Toujours à jour</h3><p>WouStore et tes applis se mettent à jour automatiquement, même si la connexion coupe.</p></div>
+    <div class="card"><div class="icon">⭐</div><h3>Les avis de la communauté</h3><p>Lis les notes et les commentaires avant d'installer, et donne ton avis à ton tour.</p></div>
+  </div>
+
+  <h2>Installer WouStore</h2>
+  <ol>
+    <li>Touche <b>Télécharger WouStore</b> ci-dessus.</li>
+    <li>Ouvre le fichier téléchargé. Si Android le demande, autorise l'installation depuis ton navigateur ou ton gestionnaire de fichiers.</li>
+    <li>Touche <b>Installer</b>, puis ouvre WouStore.</li>
+  </ol>
+
+  <h2>Tu développes des applis ?</h2>
+  <p class="muted" style="font-size:16px;color:var(--soft)">Publie-les sur WouStore : inscription simple, sans les 14 jours de test de Google, et ton appli est publiée automatiquement si elle passe les contrôles de sécurité.</p>
+  <p><a class="btn ghost" href="dev/">Espace développeur →</a></p>
+
+  <footer>
+    <span>© 2026 WouStore</span>
+    <a href="dev/">Développeurs</a>
+  </footer>
 </div>
-
-<dialog id="zoom"><img id="zoomImg" alt="Pièce d'identité en grand"><p style="text-align:right;margin:10px 0 0"><button id="zoomClose">Fermer</button></p></dialog>
-<dialog id="reasonDlg">
-  <h3 style="margin-bottom:10px">Raison du refus</h3>
-  <textarea id="reasonText" placeholder="Ex. la photo de la pièce est illisible"></textarea>
-  <p class="row" style="margin:12px 0 0"><button id="reasonCancel">Annuler</button><button class="danger" id="reasonOk">Refuser</button></p>
-</dialog>
-<div class="toast" id="toast" role="status"></div>
-
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
-  from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, getDocs, query, where, orderBy, limit, writeBatch, updateDoc, deleteDoc, setDoc, serverTimestamp }
-  from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
-
-// Projet Firebase de WouStore (valeurs publiques : la sécurité vient des règles Firestore).
-const fb = initializeApp({
-  apiKey: 'AIzaSyBbEay6vUZU9nCraZ3pZCmKpbMsweJ4aOM',
-  authDomain: 'woustore-c9e0b.firebaseapp.com',
-  projectId: 'woustore-c9e0b',
-  storageBucket: 'woustore-c9e0b.firebasestorage.app',
-  messagingSenderId: '709382251864',
-});
-const auth = getAuth(fb);
-const db = getFirestore(fb);
-const CATALOG = 'https://raw.githubusercontent.com/Rody-241/woustore/main/catalog.json';
-const SCANS = 'https://raw.githubusercontent.com/Rody-241/woustore/main/scans/';
-
-// Résultat de l'analyse automatique (robot GitHub + VirusTotal), mis à jour toutes les heures.
-async function scanHtml(id) {
-  let r;
-  try { r = await fetch(SCANS + id + '.json?t=' + Date.now(), { cache: 'no-store' }).then((x) => (x.ok ? x.json() : null)); }
-  catch (_) { r = null; }
-  if (!r) return '<div class="muted">🔄 Analyse automatique pas encore faite (le robot passe toutes les heures).</div>';
-  if (r.status === 'no_apk') return '<div style="color:var(--red)">❌ Aucun fichier APK dans la dernière version GitHub.</div>';
-  if (r.status === 'error') return `<div style="color:var(--red)">❌ ${esc(r.message)}</div>`;
-  const s = r.scan || {};
-  let verdict;
-  if (s.status === 'done') {
-    const bad = (s.malicious || 0) + (s.suspicious || 0);
-    verdict = bad === 0
-      ? `<span style="color:var(--accent)">✅ Aucune menace (${s.engines} anti-virus)</span>`
-      : `<span style="color:var(--red)">⚠️ ${bad} anti-virus sur ${s.engines} signalent un danger</span>`;
-  } else if (s.status === 'pending') verdict = '🔄 Analyse VirusTotal en cours';
-  else if (s.status === 'disabled') verdict = '⚪ Anti-virus pas encore configuré';
-  else verdict = '❌ Analyse impossible';
-  const link = s.sha256 ? ` · <a href="https://www.virustotal.com/gui/file/${esc(s.sha256)}" target="_blank" rel="noopener">détails ↗</a>` : '';
-  const pkg = r.package ? `<div class="muted">Fichier ${esc(r.file)} · paquet ${esc(r.package)}</div>` : `<div class="muted">Fichier ${esc(r.file || '')}</div>`;
-  return `<div>${verdict}${link}</div>${pkg}`;
-}
-
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const app = $('app');
-let tab = 'devs';
-
-function toast(text) {
-  const t = $('toast'); t.textContent = text; t.style.display = 'block';
-  clearTimeout(toast.timer); toast.timer = setTimeout(() => (t.style.display = 'none'), 4000);
-}
-
-function askReason() {
-  return new Promise((resolve) => {
-    const d = $('reasonDlg'); $('reasonText').value = '';
-    $('reasonOk').onclick = () => { d.close(); resolve($('reasonText').value.trim()); };
-    $('reasonCancel').onclick = () => { d.close(); resolve(null); };
-    d.showModal();
-  });
-}
-$('zoomClose').onclick = () => $('zoom').close();
-
-// ---------- Connexion ----------
-
-getRedirectResult(auth).catch(() => {});
-$('signout').onclick = () => signOut(auth);
-
-function signInScreen(message = '') {
-  app.innerHTML = `<div class="center"><h2>Espace réservé</h2>
-    <p>Connecte-toi avec le compte Google administrateur de WouStore.</p>
-    ${message ? `<p style="color:var(--red)">${esc(message)}</p>` : ''}
-    <p><button class="primary" id="signin">Se connecter avec Google</button></p></div>`;
-  $('signin').onclick = async () => {
-    const provider = new GoogleAuthProvider();
-    try { await signInWithPopup(auth, provider); }
-    catch (e) {
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
-        await signInWithRedirect(auth, provider);
-      } else if (e.code !== 'auth/popup-closed-by-user') {
-        signInScreen(e.code === 'auth/unauthorized-domain'
-          ? "Ce site n'est pas encore autorisé dans Firebase (Authentication › Paramètres › Domaines autorisés)."
-          : 'Connexion impossible : ' + e.code);
-      }
-    }
-  };
-}
-
-onAuthStateChanged(auth, async (user) => {
-  $('signout').hidden = !user;
-  $('who').textContent = user ? user.email : 'Non connecté';
-  if (!user) return signInScreen();
-  const admin = await getDoc(doc(db, 'admins', user.uid)).then((d) => d.exists()).catch(() => false);
-  if (!admin) {
-    app.innerHTML = `<div class="center"><h2>Accès refusé</h2><p>Ce compte n'est pas administrateur de WouStore.</p></div>`;
-    return;
-  }
-  render();
-});
-
-// ---------- Écran principal ----------
-
-async function render() {
-  const [devs, subs, mods] = await Promise.all([
-    getDocs(query(collection(db, 'developers'), where('status', '==', 'pending'))),
-    getDocs(query(collection(db, 'submissions'), where('status', '==', 'review'))),
-    getDocs(query(collection(db, 'moderation'), where('blocked', '==', true))),
-  ]);
-  const tabs = [
-    ['devs', 'Développeurs', devs.size],
-    ['subs', 'À vérifier', subs.size],
-    ['reports', 'Signalements', mods.size],
-    ['apps', 'Applis publiées', 0],
-    ['reviews', 'Avis', 0],
-  ];
-  app.innerHTML = `<nav class="tabs" role="tablist">${tabs.map(([id, label, n]) =>
-    `<button class="tab" role="tab" aria-selected="${tab === id}" data-tab="${id}">${label}${n ? `<span class="badge">${n}</span>` : ''}</button>`).join('')}</nav>
-    <section id="panel"><div class="center">Chargement…</div></section>`;
-  app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { tab = b.dataset.tab; render(); }));
-  const panel = $('panel');
-  try {
-    if (tab === 'devs') await renderDevs(panel, devs);
-    if (tab === 'subs') await renderSubs(panel, subs);
-    if (tab === 'apps') await renderApps(panel);
-    if (tab === 'reports') await renderReports(panel, mods);
-    if (tab === 'reviews') await renderReviews(panel);
-  } catch (e) {
-    panel.innerHTML = `<div class="empty">Erreur : ${esc(e.message)}</div>`;
-  }
-}
-
-async function renderDevs(panel, snap) {
-  if (snap.empty) { panel.innerHTML = '<div class="empty">Aucune inscription en attente.</div>'; return; }
-  panel.innerHTML = '<div class="grid" id="list"></div>';
-  for (const d of snap.docs) {
-    const v = d.data();
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<h3>${esc(v.fullName)}</h3>
-      <div class="muted">${esc(v.phone)} · ${esc(v.email)}</div>
-      <div class="muted">Pièce d'identité (touche pour agrandir) :</div>
-      <img class="idphoto" alt="Pièce d'identité de ${esc(v.fullName)}">
-      <div class="muted">Vérifie que le nom et la photo correspondent.</div>
-      <div class="row"><button class="danger" data-no>Refuser</button><button class="primary" data-yes>Valider</button></div>`;
-    $('list').appendChild(card);
-    getDoc(doc(db, 'developer_ids', d.id)).then((p) => {
-      const img = card.querySelector('img');
-      const b64 = p.data()?.image;
-      if (b64) {
-        img.src = 'data:image/jpeg;base64,' + b64;
-        img.onclick = () => { $('zoomImg').src = img.src; $('zoom').showModal(); };
-      } else img.replaceWith(Object.assign(document.createElement('div'), { className: 'muted', textContent: 'Pas de photo.' }));
-    });
-    card.querySelector('[data-yes]').onclick = async () => {
-      await updateDoc(doc(db, 'developers', d.id), { status: 'approved', reason: null, decidedAt: serverTimestamp() });
-      toast(`${v.fullName} est maintenant développeur vérifié.`); render();
-    };
-    card.querySelector('[data-no]').onclick = async () => {
-      const reason = await askReason(); if (reason === null) return;
-      await updateDoc(doc(db, 'developers', d.id), { status: 'rejected', reason, decidedAt: serverTimestamp() });
-      toast('Inscription refusée.'); render();
-    };
-  }
-}
-
-async function renderSubs(panel, snap) {
-  if (snap.empty) {
-    panel.innerHTML = '<div class="empty">Rien à vérifier. Les applis dont tous les contrôles sont verts sont publiées automatiquement par le portique.</div>';
-    return;
-  }
-  panel.innerHTML = '<div class="grid" id="list"></div>';
-  for (const d of snap.docs) {
-    const v = d.data(); const a = v.app || {};
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<h3>${esc(a.name)}</h3>
-      <div class="muted">${esc(a.id)} · ${esc(a.category)} · par ${esc(a.developer)}</div>
-      <div><b>${esc(a.tagline)}</b></div>
-      <div class="soft">${esc(a.description)}</div>
-      <div><a href="https://github.com/${esc(a.github)}/releases" target="_blank" rel="noopener">Voir les versions sur GitHub ↗</a></div>
-      <ul class="gate">${(v.checks || []).map((c) => `<li><span class="dot ${c.level}"></span><span><b>${esc(c.label)}</b> — ${esc(c.message)}</span></li>`).join('')}</ul>
-      <div class="muted">Le portique a mis cette appli de côté à cause des points orange. Vérifie-les avant de décider.</div>
-      <div class="row"><button class="danger" data-no>Refuser</button><button class="primary" data-yes>Valider et publier</button></div>`;
-    $('list').appendChild(card);
-    card.querySelector('[data-yes]').onclick = async () => {
-      const batch = writeBatch(db);
-      batch.delete(doc(db, 'submission_queue', d.id));
-      batch.update(doc(db, 'submissions', d.id), { status: 'approved', reason: null, decidedAt: serverTimestamp() });
-      batch.set(doc(db, 'apps', a.id), { ...a, owner: v.uid, publishedAt: serverTimestamp() });
-      await batch.commit();
-      toast(`${a.name} est publiée. Son logo arrivera dans l'heure.`); render();
-    };
-    card.querySelector('[data-no]').onclick = async () => {
-      const reason = await askReason(); if (reason === null) return;
-      const batch = writeBatch(db);
-      batch.update(doc(db, 'submissions', d.id), { status: 'rejected', reason, decidedAt: serverTimestamp() });
-      await batch.commit();
-      toast('Appli refusée.'); render();
-    };
-  }
-}
-
-async function renderReports(panel, mods) {
-  if (mods.empty) { panel.innerHTML = '<div class="empty">Aucune appli retirée après signalements.</div>'; return; }
-  panel.innerHTML = '<div class="grid" id="list"></div>';
-  for (const m of mods.docs) {
-    const v = m.data();
-    const reasons = Object.entries(v.reasons || {}).map(([r, n]) => `${esc(r)} (${n})`).join(', ');
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<h3>${esc(m.id)}</h3><div style="color:var(--red)">${esc(v.reason)}</div>
-      <div class="muted">Motifs : ${reasons || '—'}</div>
-      <div class="muted">L'appli est masquée dans WouStore. Vérifie-la : si les signalements sont injustes, rétablis-la.</div>
-      <div class="row"><button class="danger" data-del>Retirer définitivement</button><button class="primary" data-ok>Rétablir</button></div>`;
-    $('list').appendChild(card);
-    card.querySelector('[data-ok]').onclick = async () => {
-      await setDoc(doc(db, 'moderation', m.id), { blocked: false, cleared: true, at: serverTimestamp() });
-      toast('Appli rétablie.'); render();
-    };
-    card.querySelector('[data-del]').onclick = async () => {
-      if (!confirm('Retirer définitivement cette appli ?')) return;
-      await setDoc(doc(db, 'moderation', m.id), { blocked: true, cleared: true, reason: 'Retirée par WouStore', at: serverTimestamp() });
-      try { await deleteDoc(doc(db, 'apps', m.id)); } catch (_) {}
-      toast('Appli retirée.'); render();
-    };
-  }
-}
-
-async function renderApps(panel) {
-  const snap = await getDocs(collection(db, 'apps'));
-  if (snap.empty) {
-    panel.innerHTML = '<div class="empty">Aucune appli publiée par un développeur pour l\'instant.<br>(Les applis de départ comme Wifensor sont dans le catalogue GitHub.)</div>';
-    return;
-  }
-  panel.innerHTML = '<div class="grid" id="list"></div>';
-  for (const d of snap.docs) {
-    const a = d.data();
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<h3>${esc(a.name)}</h3><div class="muted">${esc(d.id)} · ${esc(a.category)} · par ${esc(a.developer)}</div>
-      <div><a href="https://github.com/${esc(a.github)}/releases" target="_blank" rel="noopener">github.com/${esc(a.github)} ↗</a></div>
-      <div class="row"><button class="danger" data-del>Retirer du magasin</button></div>`;
-    $('list').appendChild(card);
-    card.querySelector('[data-del]').onclick = async () => {
-      if (!confirm(`Retirer « ${a.name} » de WouStore ? Elle ne sera plus proposée.`)) return;
-      await deleteDoc(doc(db, 'apps', d.id));
-      toast('Appli retirée.'); render();
-    };
-  }
-}
-
-async function renderReviews(panel) {
-  // Toutes les applis : catalogue GitHub + applis publiées par les développeurs.
-  const ids = new Map();
-  try {
-    const cat = await fetch(CATALOG, { cache: 'no-store' }).then((r) => r.json());
-    for (const a of cat.apps) if (!a.hidden) ids.set(a.id, a.name);
-  } catch (_) {}
-  for (const d of (await getDocs(collection(db, 'apps'))).docs) ids.set(d.id, d.data().name);
-
-  panel.innerHTML = '<div class="grid" id="list"></div>';
-  let total = 0;
-  for (const [id, name] of ids) {
-    const snap = await getDocs(query(collection(db, 'reviews', id, 'items'), orderBy('updatedAt', 'desc'), limit(50)));
-    if (snap.empty) continue;
-    total += snap.size;
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `<h3>${esc(name)} <span class="muted">· ${snap.size} avis</span></h3>`;
-    for (const r of snap.docs) {
-      const v = r.data();
-      const row = document.createElement('div');
-      row.className = 'review';
-      row.innerHTML = `<div><b>${esc(v.name)}</b> <span class="stars">${'★'.repeat(v.rating)}${'☆'.repeat(5 - v.rating)}</span>
-        <span class="muted">${v.updatedAt ? v.updatedAt.toDate().toLocaleDateString('fr-FR') : ''}</span></div>
-        <div class="soft">${esc(v.text) || '<span class="muted">(sans commentaire)</span>'}</div>
-        <p style="margin:6px 0 0"><button class="danger" data-del>Supprimer cet avis</button></p>`;
-      row.querySelector('[data-del]').onclick = async () => {
-        if (!confirm(`Supprimer l'avis de ${v.name} ?`)) return;
-        await deleteDoc(doc(db, 'reviews', id, 'items', r.id));
-        toast('Avis supprimé.'); render();
-      };
-      card.appendChild(row);
-    }
-    $('list').appendChild(card);
-  }
-  if (!total) panel.innerHTML = '<div class="empty">Aucun avis pour l\'instant.</div>';
-}
-</script>
 </body>
 </html>
