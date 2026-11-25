@@ -427,7 +427,16 @@ def main():
             previous = json.loads(meta_file.read_text()) if meta_file.exists() else {}
             info["scan"] = vt_scan(apk, previous.get("scan"))
             info = hold_suspicious_update(app, info, previous)
-            data = None if keep else icon_from_apk(apk, aapt)
+            data = None
+            if not keep:
+                # Comme l'icône 512 × 512 du Play Store : un fichier icon.png joint à la version.
+                icon_asset = next((a for a in rel.get("assets", []) if a["name"].lower() in ("icon.png", "logo.png")), None)
+                if icon_asset:
+                    download(icon_asset["browser_download_url"], f"/tmp/{app['id']}-icon.png")
+                    data = to_png(open(f"/tmp/{app['id']}-icon.png", "rb").read())
+                    print(app["name"], ": icône fournie par le développeur")
+                else:
+                    data = icon_from_apk(apk, aapt)
             os.remove(apk)
         except Exception as e:  # une appli en erreur ne bloque pas les autres
             print(app["name"], ": erreur", e)

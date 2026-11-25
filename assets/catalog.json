@@ -249,23 +249,6 @@
   ],
   "apps": [
     {
-      "id": "com.wifensor.wifensor",
-      "name": "Wifensor",
-      "developer": "Rody-241",
-      "tagline": "Protège ton Wi-Fi des intrus",
-      "category": "Outils",
-      "icon": "shield",
-      "color": "#3DDC97",
-      "github": "Rody-241/wifensor",
-      "asset": "^Wifensor\\.apk$",
-      "android": "7+",
-      "featured": true,
-      "openSource": false,
-      "description": "Vois qui est connecté à ton Wi-Fi et bloque les appareils que tu ne connais pas. Compatible avec les box Airtel.",
-      "screenshots": [],
-      "keepIcon": true
-    },
-    {
       "id": "com.woustore.woustore",
       "name": "WouStore",
       "developer": "Rody-241",
