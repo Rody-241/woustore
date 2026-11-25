@@ -136,6 +136,11 @@ function askReason() {
   });
 }
 $('zoomClose').onclick = () => $('zoom').close();
+// Toute action refusée affiche son erreur au lieu de ne rien faire.
+window.addEventListener('unhandledrejection', (e) => {
+  const err = e.reason || {};
+  toast(err.code === 'permission-denied' ? 'Action refusée par les règles de sécurité.' : 'Erreur : ' + (err.message || err));
+});
 
 // ---------- Connexion ----------
 
@@ -241,7 +246,7 @@ async function renderDevs(panel, snap) {
 
 async function renderSubs(panel, snap) {
   if (snap.empty) {
-    panel.innerHTML = '<div class="empty">Rien à vérifier. Les applis dont tous les contrôles sont verts sont publiées automatiquement par le portique.</div>';
+    panel.innerHTML = '<div class="empty">Rien à vérifier. Les applis dont tous les contrôles sont verts sont publiées directement.</div>';
     return;
   }
   panel.innerHTML = '<div class="grid" id="list"></div>';
@@ -260,7 +265,6 @@ async function renderSubs(panel, snap) {
     $('list').appendChild(card);
     card.querySelector('[data-yes]').onclick = async () => {
       const batch = writeBatch(db);
-      batch.delete(doc(db, 'submission_queue', d.id));
       batch.update(doc(db, 'submissions', d.id), { status: 'approved', reason: null, decidedAt: serverTimestamp() });
       batch.set(doc(db, 'apps', a.id), { ...a, owner: v.uid, publishedAt: serverTimestamp() });
       await batch.commit();
