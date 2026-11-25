@@ -26,6 +26,6 @@
   "cert": "208590f24a53c9dcc3b99674f90fb61a50a644c057dbcc4e2fe4a90892e02d43",
   "scan": {
     "sha256": "72cf9079470b072eeca9415dbf9d87194e3cfa8db3577b8ccc3e3392975a08ec",
-    "status": "disabled"
+    "status": "pending"
   }
 }
