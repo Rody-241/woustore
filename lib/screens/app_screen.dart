@@ -593,7 +593,9 @@ class _Infos extends StatelessWidget {
           'Anti-virus',
           (app.scanMalicious ?? 0) == 0
               ? '✅ Aucune menace détectée (${app.scanEngines} anti-virus, VirusTotal)'
-              : '⚠️ ${app.scanMalicious} anti-virus sur ${app.scanEngines} signalent un danger'
+              : (app.scanMalicious ?? 0) <= 2
+                  ? '🟡 ${app.scanMalicious} anti-virus sur ${app.scanEngines} a un doute (souvent une fausse alerte)'
+                  : '⚠️ ${app.scanMalicious} anti-virus sur ${app.scanEngines} signalent un danger'
         )
       else if (app.scanStatus == 'pending')
         ('Anti-virus', 'Analyse en cours par VirusTotal'),
