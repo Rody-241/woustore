@@ -14,34 +14,30 @@
     "moe.shizuku.manager.permission.API_V23"
   ],
   "minSdk": 24,
-  "versionName": "1.0.30",
-  "versionCode": 30,
+  "versionName": "1.0.31",
+  "versionCode": 31,
   "targetSdk": 33,
   "package": "com.woustore.woustore",
   "release": {
-    "tag": "build-30",
-    "publishedAt": "2026-11-25T08:59:20Z",
+    "tag": "build-31",
+    "publishedAt": "2026-11-25T09:45:45Z",
     "notes": "WouStore.apk : téléphones récents (64 bits), presque tous les Android depuis 2017.\nWouStore-32bit.apk : anciens téléphones (32 bits).\n",
     "assets": [
       {
         "name": "WouStore-32bit.apk",
-        "url": "https://github.com/Rody-241/woustore/releases/download/build-30/WouStore-32bit.apk",
+        "url": "https://github.com/Rody-241/woustore/releases/download/build-31/WouStore-32bit.apk",
         "size": 18677516
       },
       {
         "name": "WouStore.apk",
-        "url": "https://github.com/Rody-241/woustore/releases/download/build-30/WouStore.apk",
+        "url": "https://github.com/Rody-241/woustore/releases/download/build-31/WouStore.apk",
         "size": 20889352
       }
     ]
   },
   "cert": "a8c820259bf1b2dd4948626d4f14eccbe153b3a7f8349e63eeb2bb0616b4ce71",
   "scan": {
-    "sha256": "554bb39d75e850f7a5476c84d6c1066ea20492430fdb7e9f165613e49624cd3f",
-    "status": "done",
-    "malicious": 0,
-    "suspicious": 0,
-    "engines": 74,
-    "link": "https://www.virustotal.com/gui/file/554bb39d75e850f7a5476c84d6c1066ea20492430fdb7e9f165613e49624cd3f"
+    "sha256": "fce02f12e180f1d188c1c48815aed9d15b6ef8d6cd8e82e1b5d8a4e41a31b3e4",
+    "status": "pending"
   }
 }
