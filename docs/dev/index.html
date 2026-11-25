@@ -216,7 +216,7 @@ function approvedScreen(dev) {
 }
 
 const STATUS = {
-  pending: ['Contrôle automatique en cours', 's-pending'],
+  pending: ['Contrôle en cours', 's-pending'],
   review: ['Vérification par WouStore', 's-review'],
   approved: ['Publiée', 's-approved'],
   rejected: ['Refusée', 's-rejected'],
@@ -262,7 +262,7 @@ async function dashboard(panel) {
     card.innerHTML = `<h3>${esc(s.app?.name)}</h3><div class="muted">${esc(s.app?.id)}</div>
       <p><span class="status ${cls}">${label}</span></p>
       ${s.status === 'rejected' && s.reason ? `<div class="soft">Raison : ${esc(s.reason)}</div>` : ''}
-      ${s.status === 'pending' && !checks ? '<div class="muted">Les contrôles automatiques passent toutes les 15 minutes.</div>' : ''}
+      ${s.status === 'pending' && !checks ? '<div class="muted">Le contrôle prend en général moins d\'une heure.</div>' : ''}
       ${checks ? `<ul class="gate">${checks}</ul>` : ''}`;
     $('subs').appendChild(card);
   }
@@ -305,7 +305,7 @@ async function publishForm(panel) {
   try { cats = (await fetch(CATALOG, { cache: 'no-store' }).then((r) => r.json())).categories || []; } catch (_) {}
   panel.innerHTML = `<div class="card">
     <h2 style="margin-top:0">Publier une appli</h2>
-    <p class="muted">Ton appli passe des contrôles automatiques, comme sur Google Play. Si tout est vert, elle est publiée sans attendre.</p>
+    <p class="muted">Ton appli passe des contrôles de sécurité. Si tout est vert, elle est publiée sans attendre.</p>
 
     <label for="name">Nom de l'appli</label><input type="text" id="name" maxlength="40">
     <label for="pkg">Nom de paquet Android <span class="muted">Exactement celui de ton APK, ex. com.monnom.monappli</span></label><input type="text" id="pkg">
@@ -331,7 +331,7 @@ async function publishForm(panel) {
       <ol>
         <li>Crée un dépôt sur <a href="https://github.com/new" target="_blank" rel="noopener">GitHub</a> (gratuit).</li>
         <li>Dans « Releases », publie une version et joins ton fichier <b>APK</b> (ou XAPK), signé avec ta clé.</li>
-        <li>Joins aussi ton icône carrée <b>icon.png</b> (512 × 512 pixels), comme sur Google Play. Sans elle, WouStore prend l'icône de ton APK.</li>
+        <li>Joins aussi ton icône carrée <b>icon.png</b> (512 × 512 pixels). Sans elle, WouStore prend l'icône de ton APK.</li>
         <li>Facultatif : joins une vidéo <b>.mp4</b> d'une minute au plus, pour l'aperçu.</li>
       </ol>
       À chaque nouvelle « Release », WouStore contrôle la version et la propose aux utilisateurs.
@@ -375,8 +375,8 @@ async function publishForm(panel) {
 }
 
 function guide(panel) {
-  panel.innerHTML = `<div class="card"><h2 style="margin-top:0">Les contrôles automatiques</h2>
-    <p class="soft">Comme sur Google Play, chaque appli passe un portique de sécurité :
+  panel.innerHTML = `<div class="card"><h2 style="margin-top:0">Les contrôles</h2>
+    <p class="soft">Chaque appli passe un portique de sécurité :
     <b style="color:var(--accent)">vert</b> = publiée tout de suite,
     <b style="color:var(--orange)">orange</b> = vérifiée par l'équipe WouStore,
     <b style="color:var(--red)">rouge</b> = refusée (tu reçois la raison et tu peux corriger).</p>
