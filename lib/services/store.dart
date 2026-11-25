@@ -311,6 +311,9 @@ class Store extends ChangeNotifier {
       a.versionCode = (j['versionCode'] as num?)?.toInt();
       final rel = j['release'] as Map?;
       if (rel != null) _applyRelease(a, Map<String, dynamic>.from(rel));
+      // Le vrai numéro de version de l'appli (ex. 2.0.0) plutôt que l'étiquette GitHub.
+      final vn = j['versionName'] as String?;
+      if (vn != null && vn.isNotEmpty) a.latestVersion = vn;
       a.cert = j['cert'] as String?;
       if (j['blocked'] != null) a.blocked = true;
       final scan = j['scan'] as Map?;
