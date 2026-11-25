@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Lecture des applis publiées par les développeurs et des applis retirées.
-/// L'inscription et la publication se font sur le site développeur, pas dans l'appli.
+/// L'inscription et la publication se font uniquement sur le site développeur.
 class DevSpace {
   static final _db = FirebaseFirestore.instance;
-
-  static const siteUrl = 'https://rody-241.github.io/woustore/dev/';
 
   /// Les applis validées (publiées par des développeurs), lues par tout le monde.
   static Future<List<Map<String, dynamic>>> publishedApps() async {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/app_entry.dart';
 import '../services/account.dart';
-import '../services/developer.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
@@ -304,13 +303,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(height: 24),
         ],
         const _AccountCard(),
-        const SizedBox(height: 12),
-        _MenuTile(
-          icon: Icons.code_rounded,
-          title: 'Espace développeur',
-          subtitle: 'Publie tes applis : ouvre le site développeur',
-          onTap: () => Store.i.openUrl(DevSpace.siteUrl),
-        ),
         const SizedBox(height: 24),
         Text('Mes applis', style: W.title(20)),
         const SizedBox(height: 8),
@@ -791,53 +783,6 @@ class _AccountCard extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-
-class _MenuTile extends StatelessWidget {
-  const _MenuTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Material(
-        color: W.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: W.border),
-        ),
-        child: InkWell(
-          customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Icon(icon, color: W.accent),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: W.body(15, weight: FontWeight.w700)),
-                      Text(subtitle, style: W.body(12, color: W.muted)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded, color: W.muted),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
