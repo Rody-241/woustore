@@ -12,29 +12,25 @@
   "targetSdk": 33,
   "package": "com.wifensor.wifensor",
   "release": {
-    "tag": "build-17",
-    "publishedAt": "2026-11-26T09:33:01Z",
+    "tag": "build-18",
+    "publishedAt": "2026-11-26T12:48:22Z",
     "notes": "Wifensor.apk fonctionne sur tous les téléphones Android 7 et plus récents, toutes marques.",
     "assets": [
       {
         "name": "icon.png",
-        "url": "https://github.com/Rody-241/wifensor/releases/download/build-17/icon.png",
+        "url": "https://github.com/Rody-241/wifensor/releases/download/build-18/icon.png",
         "size": 31319
       },
       {
         "name": "Wifensor.apk",
-        "url": "https://github.com/Rody-241/wifensor/releases/download/build-17/Wifensor.apk",
-        "size": 51623656
+        "url": "https://github.com/Rody-241/wifensor/releases/download/build-18/Wifensor.apk",
+        "size": 51263176
       }
     ]
   },
   "cert": "208590f24a53c9dcc3b99674f90fb61a50a644c057dbcc4e2fe4a90892e02d43",
   "scan": {
-    "sha256": "87c72e56aaa3a7dc76c6241e001b13c5f703d4db88b73e748cd2966dec8df55a",
-    "status": "done",
-    "malicious": 0,
-    "suspicious": 0,
-    "engines": 74,
-    "link": "https://www.virustotal.com/gui/file/87c72e56aaa3a7dc76c6241e001b13c5f703d4db88b73e748cd2966dec8df55a"
+    "sha256": "1949b79980e1fc86e4b9edce43bfa62ed423d274478b65039c3b93552703fc6b",
+    "status": "pending"
   }
 }
